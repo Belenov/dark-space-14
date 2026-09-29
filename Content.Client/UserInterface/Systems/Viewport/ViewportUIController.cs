@@ -1,7 +1,6 @@
 using Content.Client.UserInterface.Controls;
 using Content.Client.UserInterface.Systems.Gameplay;
 using Content.Shared.CCVar;
-using Content.Shared._DarkSpace.CCVar; // DarkSpace
 using Robust.Client.Graphics;
 using Robust.Client.Player;
 using Robust.Client.UserInterface.Controllers;
@@ -27,7 +26,6 @@ public sealed partial class ViewportUIController : UIController
         _configurationManager.OnValueChanged(CCVars.ViewportMaximumWidth, _ => UpdateViewportRatio());
         _configurationManager.OnValueChanged(CCVars.ViewportWidth, _ => UpdateViewportRatio());
         _configurationManager.OnValueChanged(CCVars.ViewportVerticalFit, _ => UpdateViewportRatio());
-        _configurationManager.OnValueChanged(DSCCVars.ViewportHeight, _ => UpdateViewportRatio()); // DarkSpace
 
         var gameplayStateLoad = UIManager.GetUIController<GameplayStateLoadController>();
         gameplayStateLoad.OnScreenLoad += OnScreenLoad;
@@ -56,11 +54,10 @@ public sealed partial class ViewportUIController : UIController
         }
         else if (width < min || width > max)
         {
-            width = Math.Clamp(width, min, max); // DarkSpace: was CCVars.ViewportWidth.DefaultValue, which can exceed a lowered max
+            width = CCVars.ViewportWidth.DefaultValue;
         }
 
-        var height = _configurationManager.GetCVar(DSCCVars.ViewportHeight); // DarkSpace: was the ViewportHeight const
-        Viewport.Viewport.ViewportSize = (EyeManager.PixelsPerMeter * width, EyeManager.PixelsPerMeter * height);
+        Viewport.Viewport.ViewportSize = (EyeManager.PixelsPerMeter * width, EyeManager.PixelsPerMeter * ViewportHeight);
         Viewport.UpdateCfg();
     }
 

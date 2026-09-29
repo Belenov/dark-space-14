@@ -9,9 +9,9 @@ namespace Content.Shared._DarkSpace.CCVar;
 public sealed class DSCCVars
 {
     /// <summary>
-    /// Height of the main game viewport in tiles. Lower values show less of the map with bigger sprites.
-    /// Upstream hardcodes 15. Keep viewport.minimum_width/maximum_width in proportion (about 1.4x height).
+    /// Camera zoom applied to a player's entity when they attach to it. Below 1 is closer (1 = upstream default).
+    /// The same zoom is used on every monitor, since the visible tile count does not depend on screen size.
     /// </summary>
-    public static readonly CVarDef<int> ViewportHeight =
-        CVarDef.Create("darkspace.viewport_height", 15, CVar.REPLICATED | CVar.SERVER);
+    public static readonly CVarDef<float> DefaultZoom =
+        CVarDef.Create("darkspace.default_zoom", 1f, CVar.SERVER | CVar.ARCHIVE);
 }
