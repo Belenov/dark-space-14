@@ -10,7 +10,8 @@ soft_max_players = 60
 [hub]
 tags = "lang:ru,rp:med"
 
-# Closer default camera: zoom the player's eye in (1 = upstream, lower = closer).
-# 0.65 shows about 14x10 tiles instead of 21x15, same on every monitor.
+# Closer default camera that keeps pixels crisp: the view is about 10 tiles tall (upstream 15),
+# drawn at a whole-number scale so every sprite pixel is an even square on any monitor.
+# Fractional eye zoom (darkspace.default_zoom) is left at 1, since it made pixels uneven.
 [darkspace]
-default_zoom = 0.65
+view_tiles = 10

@@ -1,5 +1,6 @@
 using Content.Client.UserInterface.Controls;
 using Content.Client.UserInterface.Systems.Gameplay;
+using Content.Shared._DarkSpace.CCVar; // DarkSpace
 using Content.Shared.CCVar;
 using Robust.Client.Graphics;
 using Robust.Client.Player;
@@ -26,6 +27,7 @@ public sealed partial class ViewportUIController : UIController
         _configurationManager.OnValueChanged(CCVars.ViewportMaximumWidth, _ => UpdateViewportRatio());
         _configurationManager.OnValueChanged(CCVars.ViewportWidth, _ => UpdateViewportRatio());
         _configurationManager.OnValueChanged(CCVars.ViewportVerticalFit, _ => UpdateViewportRatio());
+        _configurationManager.OnValueChanged(DSCCVars.ViewTiles, _ => UpdateViewportRatio()); // DarkSpace
 
         var gameplayStateLoad = UIManager.GetUIController<GameplayStateLoadController>();
         gameplayStateLoad.OnScreenLoad += OnScreenLoad;

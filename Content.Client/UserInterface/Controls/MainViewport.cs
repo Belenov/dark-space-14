@@ -1,5 +1,7 @@
 using System.Numerics;
+using Content.Client._DarkSpace.Viewport; // DarkSpace
 using Content.Client.Viewport;
+using Content.Shared._DarkSpace.CCVar; // DarkSpace
 using Content.Shared.CCVar;
 using Robust.Client.UserInterface;
 using Robust.Client.UserInterface.Controls;
@@ -50,6 +52,11 @@ namespace Content.Client.UserInterface.Controls
 
         public void UpdateCfg()
         {
+            // DarkSpace start: crisp closer camera at a whole-number scale
+            if (DSPixelPerfectViewport.TryApply(Viewport, PixelSize, _cfg))
+                return;
+            // DarkSpace end
+
             var stretch = _cfg.GetCVar(CCVars.ViewportStretch);
             var renderScaleUp = _cfg.GetCVar(CCVars.ViewportScaleRender);
             var fixedFactor = _cfg.GetCVar(CCVars.ViewportFixedScaleFactor);
