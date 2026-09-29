@@ -38,7 +38,9 @@ public sealed class ReactorUiState(
     float passportReproduction,
     float passportError,
     int size,
-    List<ReactorCellType> cells) : BoundUserInterfaceState
+    List<ReactorCellType> cells,
+    List<float> flux,
+    bool linked) : BoundUserInterfaceState
 {
     public readonly float Power = power;
     public readonly float NominalPower = nominalPower;
@@ -57,6 +59,12 @@ public sealed class ReactorUiState(
     public readonly float PassportError = passportError;
     public readonly int Size = size;
     public readonly List<ReactorCellType> Cells = cells;
+
+    /// <summary>Thermal power per channel, watts.</summary>
+    public readonly List<float> Flux = flux;
+
+    /// <summary>False when the console has no reactor in range.</summary>
+    public readonly bool Linked = linked;
 }
 
 /// <summary>Set the rod target insertion, 0..1.</summary>

@@ -1,21 +1,56 @@
-# Isotope reactor "ИР-7 Заря", first vertical slice.
-# Sprites are placeholders borrowed from the AME until our own art exists.
+# Isotope reactor "ИР-7 Заря".
+# The hall: a 7x7 lid of channels on the floor, the core logic entity on the centre tile under the middle channel,
+# and a separate СУЗ console nearby. The core draws the 11x11 shell (reactor_shell_xl) with the 7x7 channel window
+# in its middle, so the hall needs an 11x11 clear area centred on the core.
 
 - type: entity
   parent: BaseStructure
   id: DarkSpaceReactorCore
-  name: реактор ИР-7 «Заря»
-  description: Изотопный реактор канального типа. Греет теплоноситель в трубе, электричество даёт ТЭГ на этом контуре.
+  name: активная зона ИР-7 «Заря»
+  description: Сердце энергоблока. Под крышкой из каналов идёт цепная реакция, тепло уходит в теплоноситель, ток даёт ТЭГ.
+  placement:
+    mode: SnapgridCenter
   components:
   - type: Sprite
-    sprite: Structures/Power/Generation/ame.rsi
-    state: control
-    snapCardinals: true
-  - type: Rotatable
+    sprite: _DarkSpace/Structures/Power/reactor_shell_xl.rsi
+    drawdepth: FloorTiles
+    noRot: true
+    layers:
+    - state: off
+      map: [ "enum.ReactorCoreVisuals.State" ]
+    - state: cracks-1
+      map: [ "enum.ReactorCoreVisuals.Cracks" ]
+      visible: false
+    - state: steam
+      map: [ "steam" ]
+      visible: false
+  - type: Appearance
+  - type: GenericVisualizer
+    visuals:
+      enum.ReactorCoreVisuals.State:
+        enum.ReactorCoreVisuals.State:
+          Off: { state: off }
+          Low: { state: nominal }
+          Nominal: { state: nominal }
+          Hot: { state: hot }
+          Critical: { state: critical }
+          Wrecked: { state: wrecked }
+        steam:
+          Off: { visible: false }
+          Low: { visible: false }
+          Nominal: { visible: false }
+          Hot: { visible: true }
+          Critical: { visible: true }
+          Wrecked: { visible: true }
+      enum.ReactorCoreVisuals.Cracks:
+        enum.ReactorCoreVisuals.Cracks:
+          0: { visible: false }
+          1: { visible: true, state: cracks-1 }
+          2: { visible: true, state: cracks-2 }
+          3: { visible: true, state: cracks-3 }
+  - type: Fixtures
+    fixtures: {}
   - type: AtmosDevice
-  - type: AtmosPipeColor
-  - type: PipeColorVisuals
-  - type: PipeRestrictOverlap
   - type: NodeContainer
     nodes:
       pipe:
@@ -24,22 +59,147 @@
         pipeDirection: South
   - type: RadiationSource
     intensity: 0.2
+  - type: ReactorCore
+    # Fills missing channels when spawned by hand. A mapped hall keeps its own channels.
+    # F = fuel, R = control rod, G = graphite, . = empty. Critical at roughly 40-45% rod insertion.
+    layout:
+    - GFGFGFG
+    - FRFRFRF
+    - GFGFGFG
+    - FRFRFRF
+    - GFGFGFG
+    - FRFRFRF
+    - GFGFGFG
+
+- type: entity
+  parent: BaseStructure
+  id: DarkSpaceReactorChannel
+  name: канал реактора
+  description: Технологический канал активной зоны. Сюда вставляют ТВС, стержень СУЗ или графитовый блок.
+  placement:
+    mode: SnapgridCenter
+  components:
+  - type: Sprite
+    sprite: _DarkSpace/Structures/Power/reactor_channel.rsi
+    drawdepth: FloorObjects
+    noRot: true
+    layers:
+    - state: empty
+      map: [ "enum.ReactorChannelVisuals.Contents" ]
+  - type: Appearance
+  - type: Fixtures
+    fixtures: {}
+  - type: ReactorChannel
+  - type: ItemSlots
+    slots:
+      assembly:
+        name: ds-reactor-channel-slot
+        whitelist:
+          components:
+          - ReactorAssembly
+  - type: ContainerContainer
+    containers:
+      assembly: !type:ContainerSlot
+
+- type: entity
+  parent: BaseItem
+  id: DarkSpaceReactorAssemblyBase
+  abstract: true
+  components:
+  - type: Item
+    size: Huge
+
+- type: entity
+  parent: DarkSpaceReactorAssemblyBase
+  id: DarkSpaceReactorFuelU235
+  name: ТВС У-235
+  description: Тепловыделяющая сборка с обогащённым ураном. Фонит.
+  components:
+  - type: Sprite
+    sprite: Objects/Materials/Sheets/other.rsi
+    state: uranium
+  - type: ReactorAssembly
+    cellType: Fuel
+  - type: RadiationSource
+    intensity: 0.3
+
+- type: entity
+  parent: DarkSpaceReactorAssemblyBase
+  id: DarkSpaceReactorControlRod
+  name: стержень СУЗ
+  description: Поглощающий стержень системы управления и защиты. Глубиной погружения управляет пульт.
+  components:
+  - type: Sprite
+    sprite: Objects/Materials/parts.rsi
+    state: rods
+  - type: ReactorAssembly
+    cellType: Rod
+
+- type: entity
+  parent: DarkSpaceReactorAssemblyBase
+  id: DarkSpaceReactorGraphite
+  name: графитовый блок
+  description: Замедлитель. Усиливает соседние ТВС.
+  components:
+  - type: Sprite
+    sprite: Objects/Materials/Sheets/other.rsi
+    state: plastic
+    color: "#3a3a3a"
+  - type: ReactorAssembly
+    cellType: Graphite
+
+- type: entity
+  parent: BaseComputer
+  id: DarkSpaceReactorConsole
+  name: пульт СУЗ
+  description: Пульт управления реактором ИР-7. Картограмма зоны, стержни, АЗ-5.
+  components:
+  - type: Sprite
+    sprite: _DarkSpace/Structures/Power/suz_console.rsi
+    # BaseComputer's visualizer toggles the keyboard/keys layers; they sit under the body so they never show.
+    layers:
+    - map: ["computerLayerKeyboard"]
+      state: screen-off
+      visible: false
+    - map: ["computerLayerKeys"]
+      state: screen-off
+      visible: false
+    - map: [ "enum.WiresVisualLayers.MaintenancePanel" ]
+      state: screen-off
+      visible: false
+    - map: ["computerLayerBody"]
+      state: suz
+    - map: ["computerLayerScreen"]
+      state: screen-on
+  - type: GenericVisualizer
+    visuals:
+      enum.ComputerVisuals.Powered:
+        computerLayerScreen:
+          True: { visible: true, shader: unshaded }
+          False: { visible: false }
+      enum.ReactorConsoleVisuals.State:
+        computerLayerScreen:
+          Off: { state: screen-on }
+          Low: { state: screen-on }
+          Nominal: { state: screen-on }
+          Hot: { state: screen-alarm }
+          Critical: { state: screen-alarm }
+          Wrecked: { state: screen-alarm }
+  - type: PointLight
+    radius: 1.5
+    energy: 4.0
+    color: "#ffb347"
   - type: AccessReader
     access: [["Engineering"]]
+  - type: ReactorConsole
+  - type: ActivatableUI
+    key: enum.ReactorUiKey.Key
   - type: UserInterface
     interfaces:
       enum.ReactorUiKey.Key:
         type: ReactorBoundUserInterface
-  - type: ActivatableUI
-    key: enum.ReactorUiKey.Key
-  - type: ReactorCore
-    # F = fuel, R = rod, G = graphite, . = empty. Checkerboard with rods between fuel: critical at roughly 40% rod insertion.
-    layout:
-    - GFGFG
-    - FRFRF
-    - GFGFG
-    - FRFRF
-    - GFGFG
+      enum.WiresUiKey.Key:
+        type: WiresBoundUserInterface
 
 - type: entity
   parent: BaseStructure
@@ -48,9 +208,9 @@
   description: Застывший расплав активной зоны. Смертельно радиоактивен.
   components:
   - type: Sprite
-    sprite: Structures/Power/Generation/ame.rsi
-    state: core_strong
-    color: "#ff7a3a"
+    sprite: _DarkSpace/Structures/Power/reactor_corium.rsi
+    drawdepth: FloorObjects
+    state: corium
   - type: Fixtures
     fixtures: {}
   - type: RadiationSource

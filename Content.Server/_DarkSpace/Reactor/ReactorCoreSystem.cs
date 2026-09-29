@@ -1,3 +1,4 @@
+using System.Linq;
 using Content.Server.Atmos.EntitySystems;
 using Content.Server.Chat.Managers;
 using Content.Server.Explosion.EntitySystems;
@@ -5,18 +6,17 @@ using Content.Server.NodeContainer.EntitySystems;
 using Content.Server.NodeContainer.Nodes;
 using Content.Server.Radiation.Systems;
 using Content.Shared._DarkSpace.Reactor;
-using Content.Shared.Access.Systems;
 using Content.Shared.Administration.Logs;
 using Content.Shared.Atmos;
 using Content.Shared.Atmos.Components;
+using Content.Shared.Containers.ItemSlots;
 using Content.Shared.Database;
 using Content.Shared.Examine;
 using Content.Shared.Popups;
-using Content.Shared.Verbs;
 using Robust.Server.GameObjects;
+using Robust.Shared.Map.Components;
 using Robust.Shared.Random;
 using Robust.Shared.Timing;
-using Robust.Shared.Utility;
 
 namespace Content.Server._DarkSpace.Reactor;
 
@@ -30,9 +30,11 @@ public sealed partial class ReactorCoreSystem : EntitySystem
     [Dependency] private NodeContainerSystem _nodes = default!;
     [Dependency] private RadiationSystem _radiation = default!;
     [Dependency] private ExplosionSystem _explosion = default!;
-    [Dependency] private AccessReaderSystem _access = default!;
     [Dependency] private SharedPopupSystem _popup = default!;
-    [Dependency] private UserInterfaceSystem _ui = default!;
+    [Dependency] private ItemSlotsSystem _slots = default!;
+    [Dependency] private SharedMapSystem _map = default!;
+    [Dependency] private AppearanceSystem _appearance = default!;
+    [Dependency] private ReactorConsoleSystem _console = default!;
 
     public override void Initialize()
     {
@@ -40,59 +42,24 @@ public sealed partial class ReactorCoreSystem : EntitySystem
         SubscribeLocalEvent<ReactorCoreComponent, MapInitEvent>(OnMapInit);
         SubscribeLocalEvent<ReactorCoreComponent, AtmosDeviceUpdateEvent>(OnAtmosUpdate);
         SubscribeLocalEvent<ReactorCoreComponent, ExaminedEvent>(OnExamined);
-        SubscribeLocalEvent<ReactorCoreComponent, GetVerbsEvent<Verb>>(OnGetVerbs);
-
-        Subs.BuiEvents<ReactorCoreComponent>(ReactorUiKey.Key, subs =>
-        {
-            subs.Event<BoundUIOpenedEvent>((ent, ref _) => UpdateUi(ent));
-            subs.Event<ReactorSetRodsMessage>(OnSetRodsMessage);
-            subs.Event<ReactorScramMessage>((ent, ref args) =>
-            {
-                if (_access.IsAllowed(args.Actor, ent))
-                    Scram(ent, args.Actor);
-            });
-            subs.Event<ReactorResetScramMessage>((ent, ref args) =>
-            {
-                if (_access.IsAllowed(args.Actor, ent))
-                    ResetScram(ent, args.Actor);
-            });
-        });
-    }
-
-    private void OnSetRodsMessage(Entity<ReactorCoreComponent> ent, ref ReactorSetRodsMessage args)
-    {
-        if (!_access.IsAllowed(args.Actor, ent))
-        {
-            _popup.PopupEntity(Loc.GetString("ds-reactor-access-denied"), ent, args.Actor);
-            return;
-        }
-
-        SetRodTarget(ent, args.Target, args.Actor);
-    }
-
-    private void UpdateUi(Entity<ReactorCoreComponent> ent)
-    {
-        if (!_ui.IsUiOpen(ent.Owner, ReactorUiKey.Key))
-            return;
-
-        var c = ent.Comp;
-        _ui.SetUiState(ent.Owner, ReactorUiKey.Key, new ReactorUiState(
-            c.Power, c.NominalPower, c.KEff, c.CoreTemperature, c.CoolantTemperature,
-            c.WarningTemperature, c.MeltdownTemperature, c.RodInsertion, c.TargetRodInsertion,
-            c.Integrity, c.Scrammed, c.Melted, c.BatchNumber, c.PassportReproduction, c.PassportError,
-            c.Size, c.Cells));
     }
 
     private void OnMapInit(Entity<ReactorCoreComponent> ent, ref MapInitEvent args)
     {
         var comp = ent.Comp;
-        comp.Cells = ParseLayout(comp.Layout, comp.Size);
-
         comp.Reproduction = _random.NextFloat(comp.ReproductionMin, comp.ReproductionMax);
         comp.PassportReproduction = comp.Reproduction * (1f + _random.NextFloat(-comp.PassportError, comp.PassportError));
         comp.BatchNumber = _random.Next(1000, 9999);
+
+        if (comp.Layout.Count > 0)
+            SpawnMissingChannels(ent);
+
+        RefreshChannels(ent);
     }
 
+    /// <summary>
+    /// Parses a layout string grid. Unknown characters and missing cells are empty channels.
+    /// </summary>
     public static List<ReactorCellType> ParseLayout(List<string> rows, int size)
     {
         var cells = new List<ReactorCellType>(size * size);
@@ -114,6 +81,109 @@ public sealed partial class ReactorCoreSystem : EntitySystem
         return cells;
     }
 
+    private bool TryGetGridTile(EntityUid uid, out Entity<MapGridComponent> grid, out Vector2i tile)
+    {
+        grid = default;
+        tile = default;
+        var xform = Transform(uid);
+        if (xform.GridUid is not { } gridUid || !TryComp<MapGridComponent>(gridUid, out var gridComp))
+            return false;
+
+        grid = (gridUid, gridComp);
+        tile = _map.TileIndicesFor(grid, xform.Coordinates);
+        return true;
+    }
+
+    /// <summary>
+    /// Row y = 0 is the north edge of the lid, so the layout strings read like the map.
+    /// </summary>
+    private static Vector2i CellTile(Vector2i center, int size, int x, int y)
+    {
+        var half = size / 2;
+        return center + new Vector2i(x - half, half - y);
+    }
+
+    private EntityUid? FindChannel(Entity<MapGridComponent> grid, Vector2i tile)
+    {
+        var anchored = _map.GetAnchoredEntities(grid, tile);
+        while (anchored.MoveNext(out var uid))
+        {
+            if (uid != null && HasComp<ReactorChannelComponent>(uid.Value))
+                return uid;
+        }
+
+        return null;
+    }
+
+    private void SpawnMissingChannels(Entity<ReactorCoreComponent> ent)
+    {
+        var comp = ent.Comp;
+        if (!TryGetGridTile(ent, out var grid, out var center))
+            return;
+
+        var layout = ParseLayout(comp.Layout, comp.Size);
+        for (var y = 0; y < comp.Size; y++)
+        {
+            for (var x = 0; x < comp.Size; x++)
+            {
+                var tile = CellTile(center, comp.Size, x, y);
+                if (FindChannel(grid, tile) != null)
+                    continue;
+
+                var channel = Spawn(comp.ChannelPrototype, _map.GridTileToLocal(grid, grid, tile));
+                if (!comp.AssemblyPrototypes.TryGetValue(layout[y * comp.Size + x], out var proto)
+                    || !TryComp<ReactorChannelComponent>(channel, out var channelComp))
+                    continue;
+
+                var assembly = Spawn(proto, Transform(channel).Coordinates);
+                if (!_slots.TryInsert(channel, channelComp.SlotId, assembly, null))
+                    Del(assembly);
+            }
+        }
+    }
+
+    /// <summary>
+    /// Re-reads every channel of the lid. Cheap enough to run each atmos tick.
+    /// </summary>
+    private void RefreshChannels(Entity<ReactorCoreComponent> ent)
+    {
+        var comp = ent.Comp;
+        var count = comp.Size * comp.Size;
+        comp.Cells.Clear();
+        comp.Channels.Clear();
+
+        if (!TryGetGridTile(ent, out var grid, out var center))
+        {
+            for (var i = 0; i < count; i++)
+            {
+                comp.Cells.Add(ReactorCellType.Empty);
+                comp.Channels.Add(null);
+            }
+
+            return;
+        }
+
+        for (var y = 0; y < comp.Size; y++)
+        {
+            for (var x = 0; x < comp.Size; x++)
+            {
+                var channel = FindChannel(grid, CellTile(center, comp.Size, x, y));
+                comp.Channels.Add(channel);
+
+                var type = ReactorCellType.Empty;
+                if (channel != null
+                    && TryComp<ReactorChannelComponent>(channel, out var channelComp)
+                    && _slots.GetItemOrNull(channel.Value, channelComp.SlotId) is { } item
+                    && TryComp<ReactorAssemblyComponent>(item, out var assembly))
+                {
+                    type = assembly.CellType;
+                }
+
+                comp.Cells.Add(type);
+            }
+        }
+    }
+
     private void OnAtmosUpdate(Entity<ReactorCoreComponent> ent, ref AtmosDeviceUpdateEvent args)
     {
         var (uid, comp) = ent;
@@ -121,6 +191,7 @@ public sealed partial class ReactorCoreSystem : EntitySystem
             return;
 
         var dt = args.dt;
+        RefreshChannels(ent);
         MoveRods(comp, dt);
 
         GasMixture? coolant = null;
@@ -129,7 +200,8 @@ public sealed partial class ReactorCoreSystem : EntitySystem
 
         comp.CoolantTemperature = coolant?.Temperature;
 
-        var k = ReactorPhysics.LayoutK(comp.Cells, comp.Size, comp.RodInsertion, comp.Reproduction, comp.Coefficients)
+        var factors = ReactorPhysics.CellFactors(comp.Cells, comp.Size, comp.RodInsertion, comp.Coefficients);
+        var k = ReactorPhysics.LayoutK(comp.Cells, factors, comp.Reproduction, comp.Coefficients)
                 + ReactorPhysics.ThermalFeedback(comp.CoreTemperature, comp.CoolantTemperature, comp.Coefficients);
 
         if (_timing.CurTime < comp.ScramSpikeEnd)
@@ -137,8 +209,13 @@ public sealed partial class ReactorCoreSystem : EntitySystem
 
         comp.KEff = k;
 
-        var source = k > 0f ? comp.SourcePower : 0f;
-        comp.Power = ReactorPhysics.StepPower(comp.Power, k, comp.GenerationTime, dt, source, comp.MaxPower);
+        var hasFuel = comp.Cells.Contains(ReactorCellType.Fuel);
+        var source = hasFuel ? comp.SourcePower : 0f;
+        comp.Power = hasFuel
+            ? ReactorPhysics.StepPower(comp.Power, k, comp.GenerationTime, dt, source, comp.MaxPower)
+            : 0f;
+
+        UpdateFlux(comp, factors);
 
         var heat = comp.Power * dt;
         if (coolant != null)
@@ -154,7 +231,19 @@ public sealed partial class ReactorCoreSystem : EntitySystem
         _radiation.SetIntensity(uid, comp.BaseRadiation + comp.RadiationPerNominal * comp.Power / comp.NominalPower);
 
         UpdateFailure(ent, dt);
-        UpdateUi(ent);
+        UpdateVisuals(ent);
+        _console.UpdateLinkedConsoles(ent);
+    }
+
+    private void UpdateFlux(ReactorCoreComponent comp, float[] factors)
+    {
+        var total = 0f;
+        foreach (var f in factors)
+            total += f;
+
+        comp.Flux.Clear();
+        for (var i = 0; i < factors.Length; i++)
+            comp.Flux.Add(total > 0f ? comp.Power * factors[i] / total : 0f);
     }
 
     private void MoveRods(ReactorCoreComponent comp, float dt)
@@ -162,6 +251,47 @@ public sealed partial class ReactorCoreSystem : EntitySystem
         var speed = comp.Scrammed ? comp.ScramRodSpeed : comp.RodSpeed;
         var delta = comp.TargetRodInsertion - comp.RodInsertion;
         comp.RodInsertion += Math.Clamp(delta, -speed * dt, speed * dt);
+    }
+
+    public ReactorCoreState GetState(ReactorCoreComponent comp)
+    {
+        if (comp.Melted)
+            return ReactorCoreState.Wrecked;
+        if (comp.CoreTemperature > comp.WarningTemperature)
+            return ReactorCoreState.Critical;
+        if (comp.CoreTemperature > comp.WarningTemperature - 300f)
+            return ReactorCoreState.Hot;
+        if (comp.Power >= comp.NominalPower * 0.3f)
+            return ReactorCoreState.Nominal;
+        if (comp.Power >= comp.NominalPower * 0.01f)
+            return ReactorCoreState.Low;
+        return ReactorCoreState.Off;
+    }
+
+    private void UpdateVisuals(Entity<ReactorCoreComponent> ent)
+    {
+        var comp = ent.Comp;
+        _appearance.SetData(ent, ReactorCoreVisuals.State, GetState(comp));
+        _appearance.SetData(ent, ReactorCoreVisuals.Cracks, comp.Integrity switch
+        {
+            >= 90f => 0,
+            >= 50f => 1,
+            >= 25f => 2,
+            _ => 3,
+        });
+        _appearance.SetData(ent, ReactorCoreVisuals.Scram, comp.Scrammed);
+
+        // Channel glow is relative to a nominal channel so the lid lights up as the reactor climbs.
+        var perChannelNominal = comp.NominalPower / Math.Max(1, comp.Cells.Count(c => c == ReactorCellType.Fuel));
+        for (var i = 0; i < comp.Channels.Count; i++)
+        {
+            if (comp.Channels[i] is not { } channel)
+                continue;
+
+            var level = i < comp.Flux.Count ? (int) Math.Clamp(MathF.Ceiling(comp.Flux[i] / perChannelNominal * 2f), 0f, 4f) : 0;
+            _appearance.SetData(channel, ReactorChannelVisuals.Contents, comp.Cells[i]);
+            _appearance.SetData(channel, ReactorChannelVisuals.Flux, level);
+        }
     }
 
     private void UpdateFailure(Entity<ReactorCoreComponent> ent, float dt)
@@ -199,21 +329,21 @@ public sealed partial class ReactorCoreSystem : EntitySystem
         _chat.SendAdminAlert(Loc.GetString("ds-reactor-admin-meltdown", ("reactor", ToPrettyString(uid))));
         _adminLog.Add(LogType.Explosion, LogImpact.Extreme, $"Reactor {ToPrettyString(uid):reactor} melted down");
 
-        var coords = Transform(uid).Coordinates;
-        Spawn(comp.CoriumPrototype, coords);
-        UpdateUi(ent);
+        Spawn(comp.CoriumPrototype, Transform(uid).Coordinates);
         _explosion.QueueExplosion(uid, "Default", comp.MeltdownExplosionIntensity, 3f, 30f, addLog: false);
+        UpdateVisuals(ent);
+        _console.UpdateLinkedConsoles(ent);
     }
 
     public void SetRodTarget(Entity<ReactorCoreComponent> ent, float target, EntityUid? user)
     {
-        if (ent.Comp.Scrammed)
+        if (ent.Comp.Scrammed || ent.Comp.Melted)
             return;
 
         ent.Comp.TargetRodInsertion = Math.Clamp(target, 0f, 1f);
         if (user != null)
             _adminLog.Add(LogType.Action, LogImpact.Medium, $"{ToPrettyString(user.Value):user} set rods of {ToPrettyString(ent):reactor} to {ent.Comp.TargetRodInsertion:P0}");
-        UpdateUi(ent);
+        _console.UpdateLinkedConsoles(ent);
     }
 
     /// <summary>
@@ -222,7 +352,7 @@ public sealed partial class ReactorCoreSystem : EntitySystem
     public void Scram(Entity<ReactorCoreComponent> ent, EntityUid? user)
     {
         var comp = ent.Comp;
-        if (comp.Scrammed)
+        if (comp.Scrammed || comp.Melted)
             return;
 
         comp.Scrammed = true;
@@ -232,66 +362,23 @@ public sealed partial class ReactorCoreSystem : EntitySystem
 
         _popup.PopupEntity(Loc.GetString("ds-reactor-scram"), ent, PopupType.LargeCaution);
         _adminLog.Add(LogType.Action, LogImpact.High, $"{ToPrettyString(user):user} pressed AZ-5 on {ToPrettyString(ent):reactor} at {comp.Power / 1000f:F0} kW");
+        _console.UpdateLinkedConsoles(ent);
     }
 
     public void ResetScram(Entity<ReactorCoreComponent> ent, EntityUid? user)
     {
         ent.Comp.Scrammed = false;
         _adminLog.Add(LogType.Action, LogImpact.Medium, $"{ToPrettyString(user):user} reset AZ-5 on {ToPrettyString(ent):reactor}");
+        _console.UpdateLinkedConsoles(ent);
     }
 
-    private void OnGetVerbs(Entity<ReactorCoreComponent> ent, ref GetVerbsEvent<Verb> args)
+    public ReactorUiState BuildUiState(ReactorCoreComponent c)
     {
-        if (!args.CanAccess || !args.CanInteract || ent.Comp.Melted)
-            return;
-
-        var user = args.User;
-        if (!_access.IsAllowed(user, ent))
-            return;
-
-        var comp = ent.Comp;
-        var category = new VerbCategory("ds-reactor-verb-category", null);
-
-        args.Verbs.Add(new Verb
-        {
-            Text = Loc.GetString("ds-reactor-verb-rods-up"),
-            Category = category,
-            Priority = 3,
-            Disabled = comp.Scrammed,
-            Act = () => SetRodTarget(ent, comp.TargetRodInsertion - comp.RodStep, user),
-        });
-
-        args.Verbs.Add(new Verb
-        {
-            Text = Loc.GetString("ds-reactor-verb-rods-down"),
-            Category = category,
-            Priority = 2,
-            Disabled = comp.Scrammed,
-            Act = () => SetRodTarget(ent, comp.TargetRodInsertion + comp.RodStep, user),
-        });
-
-        if (comp.Scrammed)
-        {
-            args.Verbs.Add(new Verb
-            {
-                Text = Loc.GetString("ds-reactor-verb-reset"),
-                Category = category,
-                Priority = 1,
-                Act = () => ResetScram(ent, user),
-            });
-        }
-        else
-        {
-            args.Verbs.Add(new Verb
-            {
-                Text = Loc.GetString("ds-reactor-verb-scram"),
-                Category = category,
-                Priority = 1,
-                Impact = LogImpact.High,
-                ConfirmationPopup = true,
-                Act = () => Scram(ent, user),
-            });
-        }
+        return new ReactorUiState(
+            c.Power, c.NominalPower, c.KEff, c.CoreTemperature, c.CoolantTemperature,
+            c.WarningTemperature, c.MeltdownTemperature, c.RodInsertion, c.TargetRodInsertion,
+            c.Integrity, c.Scrammed, c.Melted, c.BatchNumber, c.PassportReproduction, c.PassportError,
+            c.Size, new List<ReactorCellType>(c.Cells), new List<float>(c.Flux), true);
     }
 
     private void OnExamined(Entity<ReactorCoreComponent> ent, ref ExaminedEvent args)
@@ -308,10 +395,6 @@ public sealed partial class ReactorCoreSystem : EntitySystem
                 return;
             }
 
-            args.PushMarkup(Loc.GetString("ds-reactor-examine-passport",
-                ("batch", comp.BatchNumber),
-                ("k", comp.PassportReproduction.ToString("F3")),
-                ("error", (int) MathF.Round(comp.PassportError * 100))));
             args.PushMarkup(Loc.GetString("ds-reactor-examine-power",
                 ("power", (comp.Power / 1000f).ToString("F1")),
                 ("keff", comp.KEff.ToString("F4"))));
@@ -319,37 +402,6 @@ public sealed partial class ReactorCoreSystem : EntitySystem
                 ("core", (int) comp.CoreTemperature),
                 ("coolant", comp.CoolantTemperature is { } t ? ((int) t).ToString() : "—"),
                 ("limit", (int) comp.MeltdownTemperature)));
-            args.PushMarkup(Loc.GetString("ds-reactor-examine-rods",
-                ("rods", (int) MathF.Round(comp.RodInsertion * 100)),
-                ("target", (int) MathF.Round(comp.TargetRodInsertion * 100)),
-                ("integrity", (int) comp.Integrity)));
-
-            if (comp.Scrammed)
-                args.PushMarkup(Loc.GetString("ds-reactor-examine-scrammed"));
-
-            args.PushMarkup(Loc.GetString("ds-reactor-examine-layout", ("layout", FormatLayout(comp))));
         }
-    }
-
-    private static string FormatLayout(ReactorCoreComponent comp)
-    {
-        var sb = new System.Text.StringBuilder();
-        for (var y = 0; y < comp.Size; y++)
-        {
-            if (y > 0)
-                sb.Append('\n');
-            for (var x = 0; x < comp.Size; x++)
-            {
-                sb.Append(comp.Cells[y * comp.Size + x] switch
-                {
-                    ReactorCellType.Fuel => 'Т',
-                    ReactorCellType.Rod => 'С',
-                    ReactorCellType.Graphite => 'Г',
-                    _ => '·',
-                });
-            }
-        }
-
-        return FormattedMessage.EscapeText(sb.ToString());
     }
 }
