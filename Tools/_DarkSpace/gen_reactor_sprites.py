@@ -18,7 +18,7 @@ def new(w=S, h=S):
 
 
 def rgba(c, a=255):
-    return (c[0], c[1], c[2], c[3] if len(c) > 3 else a)
+    return (int(max(0, min(255, c[0]))), int(max(0, min(255, c[1]))), int(max(0, min(255, c[2]))), int(c[3]) if len(c) > 3 else a)
 
 
 def put(im, x, y, c):
@@ -409,18 +409,242 @@ def console_screen(d, mode, t, n):
     return im
 
 
-# ---------------------------------------------------------------- writing
-def strip(frames):
-    im = new(S * len(frames), S)
-    for i, f in enumerate(frames):
-        im.paste(f, (S * i, 0))
+
+# ---------------------------------------------------------------- big reactor shell (7x7 tiles, hole for the 5x5 channel grid)
+SH = 224            # 7 tiles
+HOLE = (32, 192)    # channel grid lives here, 160x160
+
+GLYPHS = {
+    "И": ["X...X", "X..XX", "X.X.X", "X.X.X", "XX..X", "X...X", "X...X"],
+    "Р": ["XXXX.", "X...X", "X...X", "XXXX.", "X....", "X....", "X...."],
+    "-": [".....", ".....", ".....", "XXXXX", ".....", ".....", "....."],
+    "7": ["XXXXX", "....X", "...X.", "..X..", ".X...", ".X...", ".X..."],
+    "З": [".XXX.", "X...X", "....X", "..XX.", "....X", "X...X", ".XXX."],
+    "А": [".XXX.", "X...X", "X...X", "XXXXX", "X...X", "X...X", "X...X"],
+    "Я": [".XXXX", "X...X", "X...X", ".XXXX", "..X.X", ".X..X", "X...X"],
+    " ": ["...", "...", "...", "...", "...", "...", "..."],
+}
+
+
+def text(im, x, y, s, c):
+    for ch in s:
+        g = GLYPHS[ch]
+        for r, row in enumerate(g):
+            for k, v in enumerate(row):
+                if v == "X": put(im, x + k, y + r, c)
+        x += len(g[0]) + 1
+    return x
+
+
+def shell_metrics(x, y):
+    dx, dy = abs(x + 0.5 - SH / 2), abs(y + 0.5 - SH / 2)
+    d_out = min(112 - dx, 112 - dy, (204 - (dx + dy)) / 1.414)
+    d_in = max(dx - 80, dy - 80, (dx + dy - 152) / 1.414)
+    inside_hole = d_in < 0
+    return dx, dy, d_out, d_in, inside_hole
+
+
+STATE_COL = {
+    "off": (60, 64, 62), "nominal": (70, 220, 255), "hot": (255, 160, 40),
+    "critical": (255, 50, 40), "meltdown": (255, 240, 200), "wrecked": (90, 40, 30),
+}
+
+
+def shell_base():
+    im = new(SH, SH)
+    for y in range(SH):
+        for x in range(SH):
+            dx, dy, d_out, d_in, hole = shell_metrics(x, y)
+            if d_out < 0 or hole:
+                continue
+            n = (hsh(x, y, 21) - 0.5) * 8
+            light = -((x - SH / 2) + (y - SH / 2)) / SH * 10
+            c = (76 + light + n, 84 + light + n, 80 + light + n)
+            if d_out < 2.0:
+                c = (18, 21, 20)
+            elif d_out < 3.5:
+                c = (96, 104, 98) if (x + y) < SH else (44, 48, 46)
+            elif 4.5 <= d_out < 10.5:  # hazard band
+                c = (206, 168, 26) if ((x + y) // 6) % 2 == 0 else (26, 26, 24)
+                if d_out < 5.5 or d_out > 9.5: c = mul(c, 0.7)
+            elif d_out < 12:
+                c = (30, 34, 32)
+            elif d_in < 2.5:
+                c = (22, 25, 24)
+            elif d_in < 4.5:
+                c = (100, 108, 102) if (x + y) > SH else (56, 62, 58)  # inner lip
+            else:
+                if x % 32 in (0, 31) or y % 32 in (0, 31):  # panel seams
+                    c = (36, 40, 38)
+                elif x % 32 in (1,) or y % 32 in (1,):
+                    c = (104, 112, 106)
+            put(im, x, y, c)
+    # rivets at panel corners
+    for gx in range(0, SH, 32):
+        for gy in range(0, SH, 32):
+            for (ox, oy) in ((4, 4), (27, 4), (4, 27), (27, 27)):
+                px, py = gx + ox, gy + oy
+                if 0 <= px < SH and 0 <= py < SH and im.getpixel((px, py))[3]:
+                    dx, dy, d_out, d_in, hole = shell_metrics(px, py)
+                    if d_out > 12 and d_in > 4.5:
+                        rect(im, px, py, px + 1, py + 1, (118, 124, 116)); put(im, px + 1, py + 1, (34, 36, 34))
+    # red nameplate band on the north wall
+    rect(im, 72, 15, 152, 27, (18, 12, 12))
+    rect(im, 73, 16, 151, 26, (150, 28, 24))
+    rect(im, 73, 16, 151, 16, (200, 60, 50))
+    text(im, 88, 18, "ИР-7 ЗАРЯ", (240, 230, 210))
+    # coolant pipes crossing the west and east walls
+    for (x0, x1) in ((0, 34), (190, SH - 1)):
+        for y in range(104, 121):
+            t = (y - 104) / 16
+            col = mix((150, 162, 172), (44, 56, 66), t ** 0.8)
+            for x in range(x0, x1):
+                put(im, x, y, col)
+        for fx in ((x0 + 5, x0 + 8), (x1 - 9, x1 - 6)):
+            rect(im, fx[0], 100, fx[1], 124, (70, 78, 82))
+            rect(im, fx[0], 100, fx[0], 124, (130, 140, 140))
+            rect(im, fx[1], 100, fx[1], 124, (24, 28, 28))
+            for by in (102, 122): rect(im, fx[0] + 1, by, fx[1] - 1, by, (30, 34, 34))
+        vx = (x0 + x1) // 2
+        for x, y, dx, dy, r in px_iter(0):
+            pass
+        for yy in range(-5, 6):
+            for xx in range(-5, 6):
+                r = math.hypot(xx, yy)
+                if r <= 5:
+                    c = (120, 24, 20) if r > 3.5 else mix((214, 50, 40), (110, 20, 16), (xx + yy + 10) / 20)
+                    if abs(xx) <= 0 or abs(yy) <= 0: c = (60, 12, 10)
+                    put(im, vx + xx, 112 + yy - 0, c)
+    # corner beacon housings and the gauge box on the south wall
+    for (bx, by) in ((26, 26), (197, 26), (26, 197), (197, 197)):
+        for yy in range(-4, 5):
+            for xx in range(-4, 5):
+                if math.hypot(xx, yy) <= 4.2:
+                    put(im, bx + xx, by + yy, (36, 40, 38) if math.hypot(xx, yy) > 3 else (24, 26, 25))
+    rect(im, 88, 196, 136, 213, (22, 26, 24)); rect(im, 89, 197, 135, 212, (54, 60, 56))
+    rect(im, 92, 200, 132, 207, (8, 12, 10))
     return im
 
 
-def write_rsi(path, states):
+def shell_glow(mode, t, n):
+    g = new(SH, SH)
+    col = STATE_COL[mode]
+    ph = 2 * math.pi * t / n
+    pulse = 0.55 + 0.45 * math.sin(ph)
+    blink = (t % 2 == 0)
+    a_in = {"off": 0.0, "nominal": 0.35 + 0.25 * pulse, "hot": 0.55 + 0.25 * pulse,
+            "critical": 0.8 if blink else 0.35, "meltdown": 0.9 if blink else 0.6, "wrecked": 0.25 + 0.2 * pulse}[mode]
+    for y in range(SH):
+        for x in range(SH):
+            dx, dy, d_out, d_in, hole = shell_metrics(x, y)
+            if hole or d_out < 0:
+                continue
+            if 4.5 <= d_in < 6.5 and a_in:   # glow spilling from the opening onto the lip
+                put(g, x, y, col + (int(255 * a_in * (1 - (d_in - 4.5) / 2.0) * 0.6),))
+            elif 6.5 <= d_in < 10 and a_in:
+                put(g, x, y, col + (int(255 * a_in * 0.16 * (1 - (d_in - 6.5) / 3.5)),))
+    lamp_on = {"off": 0.0, "nominal": 1.0, "hot": 1.0, "critical": 1.0 if blink else 0.15,
+               "meltdown": 1.0 if blink else 0.3, "wrecked": 0.0}[mode]
+    lc = {"nominal": (90, 240, 120), "hot": (255, 170, 40), "critical": (255, 50, 40), "meltdown": (255, 60, 40),
+          "off": (60, 64, 62), "wrecked": (60, 40, 30)}[mode]
+    for (bx, by) in ((26, 26), (197, 26), (26, 197), (197, 197)):
+        for yy in range(-3, 4):
+            for xx in range(-3, 4):
+                r = math.hypot(xx, yy)
+                if r <= 3.0 and lamp_on:
+                    put(g, bx + xx, by + yy, mix(lc, (255, 255, 255), 0.5 if r < 1.4 else 0.0) + (255,))
+                elif r <= 6 and lamp_on:
+                    put(g, bx + xx, by + yy, lc + (int(90 * lamp_on * (1 - r / 6)),))
+    # gauge display
+    if mode != "off" and mode != "wrecked":
+        for x in range(92, 133):
+            v = 0.5 + 0.5 * math.sin((x - 92) * 0.3 - ph * 2 + (0 if mode == "nominal" else 1))
+            h = int(1 + v * 6)
+            put(g, x, 207 - h, lc + (255,) if x % 2 == 0 else mul(lc, 0.5) + (255,))
+    return g
+
+
+def shell_cracks(level):
+    im = new(SH, SH)
+    rnd = random.Random(500 + level)
+    for _ in range(4 * level):
+        a = rnd.uniform(0, 2 * math.pi)
+        x, y = SH / 2 + 100 * math.cos(a), SH / 2 + 100 * math.sin(a)
+        d = a + math.pi + rnd.uniform(-1, 1)
+        for _ in range(rnd.randint(8, 10 + 6 * level)):
+            dx, dy, d_out, d_in, hole = shell_metrics(int(x), int(y))
+            if d_out > 10 and not hole:
+                put(im, int(x), int(y), (6, 6, 6, 255))
+                put(im, int(x) + 1, int(y), (92, 98, 94, 255)) if rnd.random() < 0.3 else None
+            d += rnd.uniform(-0.7, 0.7)
+            x += math.cos(d); y += math.sin(d)
+    return im
+
+
+def shell_steam(t, n):
+    im = new(SH, SH)
+    rnd = random.Random(900)
+    srcs = [(6, 100), (6, 124), (SH - 7, 100), (SH - 7, 124), (26, 26), (197, 26), (112, 196)]
+    for i, (sx, sy) in enumerate(srcs):
+        for k in range(4):
+            tt = (t / n + k / 4 + i * 0.13) % 1.0
+            cx = sx + 4 * math.sin(tt * 6 + i) + (tt * 10 if sx < 112 else -tt * 10) * 0.3
+            cy = sy - tt * 26
+            r = 2 + tt * 5
+            for yy in range(int(-r) - 1, int(r) + 2):
+                for xx in range(int(-r) - 1, int(r) + 2):
+                    if math.hypot(xx, yy) <= r:
+                        a = int(150 * (1 - tt) * (1 - math.hypot(xx, yy) / (r + 0.5)) + 30 * (1 - tt))
+                        px, py = int(cx) + xx, int(cy) + yy
+                        if 0 <= px < SH and 0 <= py < SH:
+                            o = im.getpixel((px, py))
+                            if a > o[3]: im.putpixel((px, py), (220, 224, 226, a))
+    return im
+
+
+def shell_wrecked(base, t):
+    im = base.copy()
+    for x, y, dx, dy, r in px_iter(0):
+        pass
+    rnd = random.Random(77)
+    for y in range(SH):
+        for x in range(SH):
+            p = im.getpixel((x, y))
+            if p[3]:
+                im.putpixel((x, y), mul(p, 0.45) + (255,))
+    for (cx, cy, rad) in ((36, 36, 22), (190, 200, 16), (112, 6, 12)):  # blasted-out chunks
+        for y in range(SH):
+            for x in range(SH):
+                if math.hypot(x - cx, y - cy) < rad + 3 * math.sin((x + y) * 0.9) and im.getpixel((x, y))[3]:
+                    dx, dy, d_out, d_in, hole = shell_metrics(x, y)
+                    im.putpixel((x, y), (0, 0, 0, 0) if d_out > 6 else (10, 8, 8, 255))
+    for (x, y) in [(rnd.randint(4, SH - 5), rnd.randint(4, SH - 5)) for _ in range(90)]:
+        p = im.getpixel((x, y)) if 0 <= x < SH and 0 <= y < SH else (0, 0, 0, 0)
+        if p[3] and hsh(x, y, t) > 0.55:
+            put(im, x, y, (255, 150, 40) if hsh(y, x, t) > 0.4 else (255, 210, 90))
+    return im
+
+
+def render_shell(mode, t=0, n=1):
+    base = shell_base()
+    if mode == "wrecked":
+        return shell_wrecked(base, t)
+    return Image.alpha_composite(base, shell_glow(mode, t, n))
+
+
+# ---------------------------------------------------------------- writing
+def strip(frames):
+    w, h = frames[0].size
+    im = new(w * len(frames), h)
+    for i, f in enumerate(frames):
+        im.paste(f, (w * i, 0))
+    return im
+
+
+def write_rsi(path, states, size=S):
     """states: list of (name, frames|list-of-dirs, delay, dirs)"""
     os.makedirs(path, exist_ok=True)
-    meta = {"version": 1, "license": LICENSE, "copyright": COPY, "size": {"x": S, "y": S}, "states": []}
+    meta = {"version": 1, "license": LICENSE, "copyright": COPY, "size": {"x": size, "y": size}, "states": []}
     for name, frames, delay, dirs in states:
         strip(frames).save(os.path.join(path, name + ".png"))
         e = {"name": name}
@@ -486,6 +710,18 @@ def main():
     registry["console_on"] = [comp(body[0], scr["on"][t]) for t in range(4)]
     registry["console_alarm"] = [comp(body[0], scr["alarm"][t]) for t in range(4)]
     registry["console_back"] = [body[1]]; registry["console_e"] = [body[2]]; registry["console_w"] = [body[3]]
+
+    # big containment shell (7x7 tiles): ring with a hole for the 5x5 channel grid at (32,32)
+    shell_states = [("off", 1), ("nominal", 4), ("hot", 4), ("critical", 2), ("meltdown", 2), ("wrecked", 2)]
+    sh = []
+    for m, n in shell_states:
+        fr = [render_shell(m, t, n) for t in range(n)]
+        sh.append((m, fr, 0.25 if n > 2 else 0.5 if n > 1 else 0, 1))
+        registry["shell_" + m] = fr
+    for lvl in (1, 2, 3):
+        sh.append((f"cracks-{lvl}", [shell_cracks(lvl)], 0, 1))
+    sh.append(("steam", [shell_steam(t, 4) for t in range(4)], 0.25, 1))
+    write_rsi(f"{OUT}/reactor_shell.rsi", sh, size=SH)
     print("wrote RSIs to", OUT)
 
     if preview_dir:
@@ -550,6 +786,38 @@ def make_preview(reg, outdir):
     for i, n in enumerate(["corium", "corium-crust", "meltdown"]):
         row.alpha_composite(reg[n][1 % len(reg[n])], (10 + (6 + i) * (S + 6) + 10, 10))
     row.resize((row.width * 5, row.height * 5), Image.NEAREST).save(os.path.join(outdir, "reactor_console_corium.png"))
+
+    # full hall mock-ups: shell + 5x5 channel grid
+    mocks = []
+    for name, scene in (("norm", lambda r, c, k: "normal"), ("hot", lambda r, c, k: "hot"), ("meltdown", hotmix)):
+        pass
+    for mode, scene in (("nominal", lambda r, c, k: "normal"), ("hot", lambda r, c, k: "hot"), ("meltdown", hotmix)):
+        fr = []
+        for t in range(4):
+            hall = Image.new("RGBA", (SH, SH), bg)
+            fr_s = reg["shell_" + mode]
+            hall.alpha_composite(grid(scene, t), (32, 32))
+            hall.alpha_composite(fr_s[t % len(fr_s)], (0, 0))
+            fr.append(hall)
+        mocks.append(fr)
+    W = SH * 3 + 40
+    for t in range(4):
+        pass
+    sheet = Image.new("RGBA", (W, SH + 20), bg)
+    for i, fr in enumerate(mocks):
+        sheet.alpha_composite(fr[0], (10 + i * (SH + 10), 10))
+    sheet.resize((sheet.width * 2, sheet.height * 2), Image.NEAREST).save(os.path.join(outdir, "reactor_hall.png"))
+    gif = []
+    for t in range(4):
+        sh2 = Image.new("RGBA", (W, SH + 20), bg)
+        for i, fr in enumerate(mocks):
+            sh2.alpha_composite(fr[t], (10 + i * (SH + 10), 10))
+        gif.append(sh2.resize((sh2.width * 2, sh2.height * 2), Image.NEAREST).convert("P", palette=Image.ADAPTIVE))
+    gif[0].save(os.path.join(outdir, "reactor_hall.gif"), save_all=True, append_images=gif[1:], duration=300, loop=0)
+    wr = Image.new("RGBA", (SH * 2 + 30, SH + 20), bg)
+    wr.alpha_composite(reg["shell_wrecked"][0], (10, 10))
+    wr.alpha_composite(reg["shell_off"][0], (SH + 20, 10))
+    wr.resize((wr.width * 2, wr.height * 2), Image.NEAREST).save(os.path.join(outdir, "reactor_shell_off_wrecked.png"))
     print("preview in", outdir)
 
 
