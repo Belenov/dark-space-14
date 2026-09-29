@@ -1,6 +1,7 @@
 using System.Net;
 using Content.Server.Administration.Logs;
 using Content.Server.Database;
+using Content.Shared._DarkSpace.CCVar; // DarkSpace
 using Content.Shared.CCVar;
 using Content.Shared.Database;
 using Content.Shared.Info;
@@ -39,7 +40,7 @@ public sealed partial class RulesManager
         {
             PopupTime = _cfg.GetCVar(CCVars.RulesWaitTime),
             CoreRules = _cfg.GetCVar(CCVars.RulesFile),
-            ShouldShowRules = !isLocalhost && !hasCooldown,
+            ShouldShowRules = !isLocalhost && !hasCooldown && _cfg.GetCVar(DSCCVars.JoinPopups), // DarkSpace
         };
         _netManager.ServerSendMessage(showRulesMessage, e.Channel);
     }

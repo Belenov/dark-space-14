@@ -5,6 +5,7 @@ using Content.Client.Guidebook.Controls;
 using Content.Client.Lobby;
 using Content.Client.Players.PlayTimeTracking;
 using Content.Client.UserInterface.Controls;
+using Content.Shared._DarkSpace.CCVar; // DarkSpace
 using Content.Shared.CCVar;
 using Content.Shared.Guidebook;
 using Content.Shared.Input;
@@ -51,6 +52,7 @@ public sealed partial class GuidebookUIController : UIController, IOnStateEntere
         _guideWindow.OnOpen += OnWindowOpen;
 
         if (state is LobbyState &&
+            _configuration.GetCVar(DSCCVars.JoinPopups) && // DarkSpace
             _jobRequirements.FetchOverallPlaytime() < TimeSpan.FromMinutes(PlaytimeOpenGuidebook))
         {
             OpenGuidebook();

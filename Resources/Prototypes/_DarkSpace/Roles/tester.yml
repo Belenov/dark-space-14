@@ -1,0 +1,32 @@
+- type: job
+  id: DSTester
+  name: job-name-ds-tester
+  description: job-description-ds-tester
+  playTimeTracker: JobDSTester
+  startingGear: DSTesterGear
+  icon: "JobIconDSTester"
+  supervisors: job-supervisors-ds-tester
+  access:
+  - Maintenance
+
+- type: startingGear
+  id: DSTesterGear
+  equipment:
+    jumpsuit: ClothingUniformJumpsuitColorGrey
+    shoes: ClothingShoesColorBlack
+    id: PassengerPDA
+    ears: ClothingHeadsetGrey
+    back: WeaponShotgunKammerer
+  inhand:
+  - BoxLethalshot
+
+- type: playTimeTracker
+  id: JobDSTester
+
+- type: jobIcon
+  parent: JobIcon
+  id: JobIconDSTester
+  icon:
+    sprite: /Textures/Interface/Misc/job_icons.rsi
+    state: Passenger
+  jobName: job-name-ds-tester

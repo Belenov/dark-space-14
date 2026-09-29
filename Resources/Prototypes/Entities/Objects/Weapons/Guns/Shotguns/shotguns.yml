@@ -22,6 +22,12 @@
   - type: AmmoCounter
   - type: Gun
     fireRate: 2
+    # DarkSpace: heavy camera kick and spread growth, scaled by skill via SkillScaledRecoil
+    cameraRecoilScalar: 3
+    angleIncrease: 8
+    angleDecay: 16
+    maxAngle: 16
+    # DarkSpace end
     selectedMode: SemiAuto
     availableModes:
     - SemiAuto
@@ -46,6 +52,7 @@
         ents: []
   - type: StaticPrice
     price: 500
+  - type: SkillScaledRecoil # DarkSpace
 
 - type: entity
   name: Bulldog

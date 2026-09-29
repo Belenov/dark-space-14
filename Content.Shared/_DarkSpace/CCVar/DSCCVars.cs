@@ -14,4 +14,10 @@ public sealed class DSCCVars
     /// </summary>
     public static readonly CVarDef<float> DefaultZoom =
         CVarDef.Create("darkspace.default_zoom", 1f, CVar.SERVER | CVar.ARCHIVE);
+
+    /// <summary>
+    /// Whether windows that open by themselves on join (rules popup, new-player guidebook) are shown.
+    /// </summary>
+    public static readonly CVarDef<bool> JoinPopups =
+        CVarDef.Create("darkspace.join_popups", false, CVar.SERVER | CVar.REPLICATED | CVar.ARCHIVE);
 }

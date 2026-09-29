@@ -28,6 +28,7 @@
   roles:
   - Passenger
   - Visitor
+  - DSTester # DarkSpace
 
 - type: department
   id: Command

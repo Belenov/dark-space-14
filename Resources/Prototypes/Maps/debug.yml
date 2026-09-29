@@ -27,6 +27,7 @@
         - type: StationJobs
           availableJobs:
             Captain: [ -1, -1 ]
+            DSTester: [ -1, -1 ] # DarkSpace
 
 - type: gameMap
   id: TestTeg
