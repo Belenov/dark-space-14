@@ -1,0 +1,11 @@
+# Configuration preset for Dark Space servers.
+# Enable with `config.presets = "DarkSpace/main"` in server_config.toml.
+
+[game]
+hostname = "[RU] Dark Space"
+desc = "Далёкая вселенная, где холодная война так и не закончилась."
+lobbyenabled = true
+soft_max_players = 60
+
+[hub]
+tags = "lang:ru,rp:med"
