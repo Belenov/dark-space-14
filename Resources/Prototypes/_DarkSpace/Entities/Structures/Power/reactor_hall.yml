@@ -1,0 +1,34 @@
+# Placeholders for the IR-7 "Zarya" reactor hall on the Dev map.
+# Swap them for the real 5x5 hall entities once darkspace/reactor has them.
+
+- type: entity
+  parent: BaseStructure
+  id: DarkSpaceReactorChannelPlaceholder
+  name: технологический канал
+  suffix: Заглушка
+  description: Крышка канала активной зоны ИР-7. По ней можно ходить, но лучше не задерживаться.
+  components:
+  - type: Sprite
+    sprite: Structures/Power/Generation/ame.rsi
+    state: shield_15
+    drawdepth: FloorObjects
+  - type: Fixtures
+    fixtures: {}
+
+- type: entity
+  parent: BaseStructure
+  id: DarkSpaceReactorConsolePlaceholder
+  name: пульт СУЗ ИР-7
+  suffix: Заглушка
+  description: Отдельный пульт управления реактором. Пока не подключён, управлять можно только с самого реактора.
+  components:
+  - type: Sprite
+    sprite: Structures/Machines/computers.rsi
+    layers:
+    - state: computer
+    - state: generic_keyboard
+    - state: engine
+      shader: unshaded
+    - state: tech_key
+      shader: unshaded
+  - type: Rotatable
