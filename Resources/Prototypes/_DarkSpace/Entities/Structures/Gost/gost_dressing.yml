@@ -36,6 +36,7 @@
   - type: Sprite
     sprite: Structures/Wallmounts/intercom.rsi
     state: base
+    snapCardinals: false # intercom.rsi is 4-directional
 
 - type: entity
   parent: BaseSignWeak
