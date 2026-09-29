@@ -1,0 +1,45 @@
+# Stand-ins for the "Науки" ray of the "Заря-7" map. No special mechanics: swap for real Soviet content later.
+
+- type: entity
+  parent: CrateRodentCage
+  id: DarkSpaceGostVivariumCage
+  suffix: Заглушка
+  name: клетка вивария
+  description: Проволочная клетка на инвентарном номере. Поилка пуста, но кто-то всё равно регулярно её наполняет.
+
+- type: entity
+  parent: DarkSpaceGostVivariumCage
+  id: DarkSpaceGostVivariumCageOpen
+  suffix: Заглушка, открыта
+  name: клетка вивария
+  description: Дверца выгнута наружу. Не сорвана, не отперта. Именно выгнута.
+  components:
+  - type: EntityStorage
+    open: true
+
+- type: entity
+  parent: [ BaseGlassBox, StructureHealthContainer ]
+  id: DarkSpaceGostAquarium
+  suffix: Заглушка
+  name: аквариум
+  description: Мутная зелёная вода и одна рыбка, которая всегда смотрит на вас.
+  components:
+  - type: Sprite
+    layers:
+    - state: base
+    - state: glass
+      color: "#5f9c8ecc"
+
+- type: entity
+  parent: AirlockScience
+  id: DarkSpaceGostWeldedArchiveDoor
+  suffix: Заглушка, заварена
+  name: заваренная дверь
+  description: >-
+    Шов свежий, хотя краска вокруг облупилась ещё при прошлом руководстве. На металле мелом:
+    «АРХИВ. НЕ ВСКРЫВАТЬ. ПРИКАЗ №0». Изнутри что-то тихо шуршит бумагой.
+  components:
+  - type: Door
+    state: Welded
+  - type: Weldable
+    isWelded: true

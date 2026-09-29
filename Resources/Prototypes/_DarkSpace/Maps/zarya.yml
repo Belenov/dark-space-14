@@ -1,0 +1,20 @@
+- type: gameMap
+  id: DarkSpaceZarya
+  mapName: Заря-7
+  mapPath: /Maps/_DarkSpace/zarya7.yml
+  minPlayers: 0
+  stations:
+    DarkSpaceZarya:
+      stationProto: StandardNanotrasenStation
+      components:
+        - type: StationNameSetup
+          mapNameTemplate: "Станция «Заря-7»"
+        - type: StationJobs
+          availableJobs:
+            Passenger: [ -1, -1 ]
+            StationEngineer: [ 4, 4 ]
+            AtmosphericTechnician: [ 2, 2 ]
+            MedicalDoctor: [ 2, 2 ]
+            SecurityOfficer: [ 2, 2 ]
+            Chef: [ 1, 1 ]
+            Janitor: [ 1, 1 ]

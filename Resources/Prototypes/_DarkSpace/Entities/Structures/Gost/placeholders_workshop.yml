@@ -1,0 +1,113 @@
+# Stand-ins for the "Заря-7" workshop/warehouse ray (Tools/_DarkSpace/zarya/ray_workshop.py). No mechanics.
+
+- type: entity
+  parent: BaseStructure
+  id: DarkSpaceGostLathe
+  suffix: Заглушка
+  name: токарный станок
+  description: Станина в масле и стружке. Паспорт на станке датирован раньше, чем ваш отец.
+  components:
+  - type: Sprite
+    sprite: Structures/Machines/cuttermachine.rsi
+    state: icon
+
+- type: entity
+  parent: BaseStructure
+  id: DarkSpaceGostPress
+  suffix: Заглушка
+  name: гидравлический пресс
+  description: Усилие сто тонн. Табличка «Не совать руки» давно стёрта чьей-то рукой.
+  components:
+  - type: Sprite
+    sprite: Structures/Machines/body_crusher.rsi
+    state: base
+
+- type: entity
+  parent: BaseStructure
+  id: DarkSpaceGostForge
+  suffix: Заглушка
+  name: термопечь
+  description: Закалочная печь. Ещё тёплая, хотя её не включали неделями.
+  components:
+  - type: Sprite
+    sprite: Structures/Machines/smelter.rsi
+    state: smelter0
+
+- type: entity
+  parent: BaseStructure
+  id: DarkSpaceGostForklift
+  suffix: Заглушка
+  name: электропогрузчик
+  description: Вилочный погрузчик ЭП-02. Аккумулятор давно сел, сиденье хранит чью-то форму.
+  components:
+  - type: Sprite
+    sprite: Objects/Vehicles/atv.rsi
+    state: vehicle
+
+- type: entity
+  parent: BaseStructure
+  id: DarkSpaceGostPartsBin
+  suffix: Заглушка
+  name: ящик запчастей
+  description: "Крепёж, подшипники, втулки. Бирки от руки: «Не расходовать без наряда»."
+  components:
+  - type: Sprite
+    sprite: Structures/Storage/orebox.rsi
+    state: orebox
+
+- type: entity
+  parent: BaseSignWeak
+  id: DarkSpaceGostPlateWorkshop
+  suffix: Заглушка
+  name: табличка «МАСТЕРСКАЯ»
+  description: "Эмалевая табличка. Ниже мелко: «Инструмент сдавать по описи»."
+  components:
+  - type: Sprite
+    sprite: Structures/Wallmounts/signs.rsi
+    state: eng
+
+- type: entity
+  parent: BaseSignWeak
+  id: DarkSpaceGostPlateToolRoom
+  suffix: Заглушка
+  name: табличка «ИНСТРУМЕНТАЛЬНАЯ»
+  description: Выдача инструмента по личной бирке. Утерянный инструмент вычитается из пайка.
+  components:
+  - type: Sprite
+    sprite: Structures/Wallmounts/signs.rsi
+    state: mats
+
+- type: entity
+  parent: BaseSignWeak
+  id: DarkSpaceGostPlateSpares
+  suffix: Заглушка
+  name: табличка «ЗАПЧАСТИ»
+  description: Склад запасных частей. Заявки на бланке форма 12-б.
+  components:
+  - type: Sprite
+    sprite: Structures/Wallmounts/signs.rsi
+    state: electrical
+
+- type: entity
+  parent: BaseSignWeak
+  id: DarkSpaceGostPlateWarehouse
+  suffix: Заглушка
+  name: табличка «СКЛАД»
+  description: Номер склада выведен трафаретом. Под ним карандашом — «пломбу не срывать».
+  components:
+  - type: Sprite
+    sprite: Structures/Wallmounts/signs.rsi
+    state: cargo
+
+- type: entity
+  parent: BaseSignWeak
+  id: DarkSpaceGostPlateSealed
+  suffix: Заглушка
+  name: табличка «ВХОД ЗАПРЕЩЁН»
+  description: >-
+    «Секция закрыта по приказу. Переборка заварена. Вскрытие — уголовно наказуемо».
+    Кто-то приписал снизу: «Оно стучит».
+  components:
+  - type: Sprite
+    sprite: Structures/Wallmounts/signs.rsi
+    state: securearea

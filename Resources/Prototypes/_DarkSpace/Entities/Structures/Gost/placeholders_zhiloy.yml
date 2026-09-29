@@ -1,0 +1,26 @@
+# Stand-ins for the "Жилой луч" of the GOST station map. No mechanics: swap for real content later.
+
+- type: entity
+  parent: DrinkTeapot
+  id: DarkSpaceGostSamovar
+  suffix: Заглушка
+  name: самовар
+  description: "Медный бок помят, кран капает. Чай в нём заваривают на одну и ту же смену вот уже двадцать лет."
+
+- type: entity
+  parent: ToiletEmpty
+  id: DarkSpaceGostUrinal
+  suffix: Заглушка
+  name: писсуар
+  description: "Казённый фаянс. Над ним прикручена табличка: «Соблюдай чистоту»."
+
+- type: entity
+  parent: BaseSignWeak
+  id: DarkSpaceGostScratches
+  suffix: Заглушка
+  name: нацарапанная надпись
+  description: "Что-то выцарапано ногтями по штукатурке. «ОНИ НЕ ВЫКЛЮЧАЮТ СВЕТ. ОНИ ЖДУТ ОТБОЯ.»"
+  components:
+  - type: Sprite
+    sprite: Structures/Wallmounts/posters.rsi
+    state: poster_broken

@@ -1,0 +1,74 @@
+# Dressing for the "Заря-7" GOST station map (Resources/Maps/_DarkSpace/gost.yml).
+# Every entity here is a stand-in without mechanics: swap for real Soviet content when it exists.
+
+- type: entity
+  parent: BaseSignWeak
+  id: DarkSpaceGostBanner
+  suffix: Заглушка
+  name: красное знамя
+  description: Бархат выцвел, бахрома осыпалась. Висит здесь дольше, чем вы живёте.
+  components:
+  - type: Sprite
+    sprite: Structures/Wallmounts/flags.rsi
+    state: blank_flag
+    color: "#9a1414"
+
+- type: entity
+  parent: BaseSignWeak
+  id: DarkSpaceGostScheduleBoard
+  suffix: Заглушка
+  name: распорядок дня
+  description: >-
+    Подъём 06:00. Завтрак 06:30. Смена 07:00-17:00. Ужин 18:00. Красный уголок 19:00.
+    ОТБОЙ 21:00. Нарушение распорядка влечёт лишение пайка.
+  components:
+  - type: Sprite
+    sprite: Structures/Wallmounts/noticeboard.rsi
+    state: notice-3
+
+- type: entity
+  parent: BaseSignWeak
+  id: DarkSpaceGostLoudspeaker
+  suffix: Заглушка
+  name: репродуктор
+  description: Чёрная тарелка на стене. Выключить нельзя. Говорит голосом, который вы знаете с детства.
+  components:
+  - type: Sprite
+    sprite: Structures/Wallmounts/intercom.rsi
+    state: base
+
+- type: entity
+  parent: BaseSignWeak
+  id: DarkSpaceGostPortrait
+  suffix: Заглушка
+  name: портрет
+  description: Суровый профиль в строгой раме. Взгляд следует за вами по комнате.
+  components:
+  - type: Sprite
+    sprite: Structures/Wallmounts/paintings.rsi
+    state: painting3
+
+- type: entity
+  parent: BaseSignWeak
+  id: DarkSpaceGostSleepStationPlate
+  suffix: Заглушка
+  name: пост усыпления
+  description: "«Вход только с разрешения санитарного отдела. Плановая газация жилого блока в 21:00.»"
+  components:
+  - type: Sprite
+    sprite: Structures/Wallmounts/signs.rsi
+    state: atmos_n2o
+
+- type: entity
+  parent: Windoor
+  id: DarkSpaceGostTurnstile
+  suffix: Заглушка
+  name: турникет проходной
+  description: Пропускает по одному и только со стороны, где вас ждут.
+
+- type: entity
+  parent: VendingMachineSnack
+  id: DarkSpaceGostRationDispenser
+  suffix: Заглушка
+  name: раздача пайка
+  description: Стандартный паёк по нормам ГОСТ. Одинаков для всех, как и положено.

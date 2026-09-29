@@ -1,0 +1,15 @@
+# Stand-ins for the "Командование" ray of the "Заря-7" map. No special mechanics: swap for real Soviet content later.
+
+- type: entity
+  parent: FaxMachineBase
+  id: DarkSpaceGostCipherMachine
+  suffix: Заглушка
+  name: шифровальная машина
+  description: Латунные диски, бумажная лента и три пломбы. Ключ на сегодня знает только один человек, и он не здесь.
+
+- type: entity
+  parent: GunSafe
+  id: DarkSpaceGostSafe
+  suffix: Заглушка
+  name: сейф
+  description: Тяжёлый сейф с сургучной печатью «Хранить вечно». Дверца перекрашена уже трижды.
