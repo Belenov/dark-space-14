@@ -224,7 +224,10 @@ def dump(path):
     chunks = encode_chunks()
     tilemap = {v: k for k, v in TILE_ID.items()}
     by_proto = defaultdict(list)
+    import protos
     for p, x, y, r in ({(p, x, y): (p, x, y, r) for p, x, y, r in ents}).values():
+        if r and protos.no_rot(p):
+            r = 0.0  # engine rejects a non-zero rotation on noRot sprites
         by_proto[p].append((x, y, r))
     lines = []
     uid = 3
