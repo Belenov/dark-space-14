@@ -1,0 +1,45 @@
+# Stand-ins for the "Столовая-медпункт" ray of the GOST station map. No mechanics: swap for real content later.
+
+- type: entity
+  parent: BaseSignWeak
+  id: DarkSpaceGostMenuBoard
+  suffix: Заглушка
+  name: меню на неделю
+  description: >-
+    Понедельник: каша. Вторник: каша. Среда: щи. Четверг: каша. Пятница: рыбный день (рыбы нет).
+    Добавки не предусмотрены.
+  components:
+  - type: Sprite
+    sprite: Structures/Wallmounts/noticeboard.rsi
+    state: notice-2
+
+- type: entity
+  parent: BaseSignWeak
+  id: DarkSpaceGostQuarantineMark
+  suffix: Заглушка
+  name: карантинная метка
+  description: "Красная краска потекла по трафарету. «ИЗОЛЯТОР №2. ВХОД ВОСПРЕЩЁН. САНИТАРНЫЙ ОТДЕЛ». Число под надписью зачёркнуто много раз."
+  components:
+  - type: Sprite
+    sprite: Structures/Wallmounts/signs.rsi
+    state: biohazard
+    color: "#b01818"
+
+- type: entity
+  parent: FoodCartHot
+  id: DarkSpaceGostPorridgeVat
+  suffix: Заглушка
+  name: бак с кашей
+  description: "Эмалированный бак на тридцать порций. Каша в нём всегда тёплая. Никто не помнит, когда его наполняли."
+
+- type: entity
+  parent: AirlockMedical
+  id: DarkSpaceGostWeldedDoor
+  suffix: Заглушка, заварена
+  name: заваренная дверь изолятора
+  description: "Шов неровный, сварка наспех. С этой стороны заваривали не для того, чтобы кто-то вышел."
+  components:
+  - type: Door
+    state: Welded
+  - type: Weldable
+    isWelded: true

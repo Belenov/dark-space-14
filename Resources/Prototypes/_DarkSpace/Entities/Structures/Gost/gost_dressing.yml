@@ -53,7 +53,7 @@
   id: DarkSpaceGostSleepStationPlate
   suffix: Заглушка
   name: пост усыпления
-  description: «Вход только с разрешения санитарного отдела. Плановая газация жилого блока в 21:00.»
+  description: "«Вход только с разрешения санитарного отдела. Плановая газация жилого блока в 21:00.»"
   components:
   - type: Sprite
     sprite: Structures/Wallmounts/signs.rsi

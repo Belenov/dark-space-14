@@ -1,0 +1,79 @@
+# Stand-ins for the "Заря-7" airlock/docking ray (Tools/_DarkSpace/zarya/ray_shlyuzy.py). No mechanics.
+
+- type: entity
+  parent: BaseSignWeak
+  id: DarkSpaceGostPlateSuitRoom
+  suffix: Заглушка
+  name: табличка «СКАФАНДРОВАЯ»
+  description: Перед выходом — проверка герметичности у старшего смены. Один выход — одна запись в журнале.
+  components:
+  - type: Sprite
+    sprite: Structures/Wallmounts/signs.rsi
+    state: eva
+
+- type: entity
+  parent: BaseSignWeak
+  id: DarkSpaceGostPlateLifeSupport
+  suffix: Заглушка
+  name: табличка «ЖО»
+  description: Система жизнеобеспечения. Баллоны опломбированы, остаток кислорода вписывается мелом.
+  components:
+  - type: Sprite
+    sprite: Structures/Wallmounts/signs.rsi
+    state: atmos_o2
+
+- type: entity
+  parent: BaseSignWeak
+  id: DarkSpaceGostPlateLockA
+  suffix: Заглушка
+  name: табличка «ШЛЮЗ А»
+  description: Рабочий шлюз. Одновременно открыть обе створки нельзя. Проверьте, что нельзя.
+  components:
+  - type: Sprite
+    sprite: Structures/Wallmounts/signs.rsi
+    state: doors
+
+- type: entity
+  parent: BaseSignWeak
+  id: DarkSpaceGostPlateLockB
+  suffix: Заглушка
+  name: табличка «ШЛЮЗ Б»
+  description: >-
+    Стыковка не предусмотрена. Внешняя створка опломбирована. На пломбе свежие царапины — изнутри.
+  components:
+  - type: Sprite
+    sprite: Structures/Wallmounts/signs.rsi
+    state: doors
+
+- type: entity
+  parent: BaseSignWeak
+  id: DarkSpaceGostPlateDock
+  suffix: Заглушка
+  name: табличка «СТЫКОВОЧНЫЙ УЗЕЛ»
+  description: Порт для приёма транспортных кораблей. Расписание прилётов вывешено, но последний борт не приходил давно.
+  components:
+  - type: Sprite
+    sprite: Structures/Wallmounts/signs.rsi
+    state: dock
+
+- type: entity
+  parent: BaseSignWeak
+  id: DarkSpaceGostPlateVacuum
+  suffix: Заглушка
+  name: табличка «ВАКУУМ»
+  description: "«Секция разгерметизирована. Вход только в скафандре. Не входить одному». Последнее подчёркнуто дважды."
+  components:
+  - type: Sprite
+    sprite: Structures/Wallmounts/signs.rsi
+    state: space
+
+- type: entity
+  parent: BaseSignWeak
+  id: DarkSpaceGostDecompAlarm
+  suffix: Заглушка
+  name: сигнализация разгерметизации
+  description: Табло перепада давления. Стрелка лежит на нуле, но лампочка «ТРЕВОГА» всё равно тлеет.
+  components:
+  - type: Sprite
+    sprite: Structures/Wallmounts/signalscreen.rsi
+    state: signalscreen

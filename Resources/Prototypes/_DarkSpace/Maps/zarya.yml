@@ -1,14 +1,14 @@
 - type: gameMap
-  id: DarkSpaceGost
+  id: DarkSpaceZarya
   mapName: Заря-7
-  mapPath: /Maps/_DarkSpace/gost.yml
+  mapPath: /Maps/_DarkSpace/zarya7.yml
   minPlayers: 0
   stations:
-    DarkSpaceGost:
+    DarkSpaceZarya:
       stationProto: StandardNanotrasenStation
       components:
         - type: StationNameSetup
-          mapNameTemplate: "Комбинат «Заря-7»"
+          mapNameTemplate: "Станция «Заря-7»"
         - type: StationJobs
           availableJobs:
             Passenger: [ -1, -1 ]
