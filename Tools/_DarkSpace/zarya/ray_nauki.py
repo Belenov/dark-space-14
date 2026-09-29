@@ -43,7 +43,7 @@ def _s1(f):
     _m(f, "KitchenReagentGrinder", 7, 10, FACE_V_MINUS)
     _m(f, "VendingMachineChemicals", 8, 10, FACE_V_MINUS)
     f.put("BarrelChemEmpty", 1, 8)
-    f.put("StorageTank", 1, 9)
+    f.put("WaterTankFull", 1, 9)
     for u in (5, 6, 7, 8):
         f.put("TableGlass", u, 8)
     f.put("Beaker", 5, 8)
@@ -118,7 +118,7 @@ def _s2(f):
         f.wall(13, v)
     _win(f, "WindowFrostedDirectional", [10, 12], 5, FACE_V_PLUS)
     f.put("Windoor", 11, 5, FACE_V_PLUS)
-    f.put("FilingCabinet", 10, 3, FACE_V_PLUS)
+    f.put("filingCabinet", 10, 3, FACE_V_PLUS)
     _m(f, "ComputerResearchAndDevelopment", 11, 3, FACE_V_PLUS)
     f.put("ChairOfficeDark", 11, 4, FACE_V_MINUS)
     f.put("BookshelfFilled", 12, 3, FACE_V_PLUS)
@@ -138,7 +138,6 @@ def _s2(f):
     f.put("ChairWood", 14, 4, FACE_V_PLUS)
     f.put("TableWood", 16, 5)
     f.put("TableWood", 17, 5)
-    f.put("KettleStation", 16, 5)
     f.put("DrinkMug", 16, 5)
     f.put("DrinkMugBlack", 17, 5)
     f.put("FoodPlateSmall", 17, 5)
@@ -164,8 +163,8 @@ def _s3(f):
         f.put("DarkSpaceGostVivariumCage", u, 10, FACE_V_MINUS)
     f.put("DarkSpaceGostAquarium", 23, 10, FACE_V_MINUS)
     f.put("DarkSpaceGostAquarium", 24, 10, FACE_V_MINUS)
-    f.put("HydroponicsTray", 25, 10)
-    f.put("HydroponicsTray", 26, 10)
+    f.put("hydroponicsTray", 25, 10)
+    f.put("hydroponicsTray", 26, 10)
     f.put("SpawnMobMouse", 20, 9)
     f.put("SpawnMobMouse", 24, 9)
     f.put("SpawnMobFrog", 26, 9)
@@ -191,8 +190,8 @@ def _s3(f):
     f.put("TableFrame", 26, 4)
     f.put("PaperScrap", 26, 4)
     f.put("ScrapGlass", 25, 5)
-    f.put("Bones", 21, 4)
-    f.put("Gib", 22, 4)
+    f.put("MaterialBones", 21, 4)
+    f.put("FoodMeatHuman", 22, 4)
     f.put("Cobweb1", 26, 5)
     f.put("MopBucket", 19, 4)
     for u, v in ((20, 4), (22, 5), (22, 6), (23, 7), (24, 6), (25, 7), (26, 6), (25, 4)):
@@ -217,7 +216,7 @@ def _s4_archive(f):
     # shelving: cabinets on the walls, two ranks of racks with aisles at v=4 and v=9
     for u in (29, 30, 31, 33, 34, 35):
         f.put("BookshelfFilled", u, 10, FACE_V_MINUS)
-        f.put("FilingCabinet", u, 3, FACE_V_PLUS)
+        f.put("filingCabinet", u, 3, FACE_V_PLUS)
         f.put("ShelfMetal", u, 8, FACE_V_MINUS)
         f.put("ShelfMetal", u, 5, FACE_V_PLUS)
     for u, p in ((29, "BoxFolderBlack"), (30, "BoxFolderRed"), (34, "BoxFolderBlack"), (35, "PaperWritten")):
@@ -237,8 +236,8 @@ def _s4_archive(f):
     for u, v in ((31, 6), (30, 7), (29, 9), (32, 9), (34, 5)):
         f.put("PuddleBlood", u, v)
     for u, v in ((34, 4), (31, 9)):
-        f.put("Bones", u, v)
-    f.put("Gib", 33, 9)
+        f.put("MaterialBones", u, v)
+    f.put("FoodMeatHuman", 33, 9)
     f.put("ScrapSteel", 30, 6)
     f.put("ScrapGlass", 32, 6)
     f.put("Ash", 35, 8)

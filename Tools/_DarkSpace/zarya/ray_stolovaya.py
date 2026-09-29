@@ -99,7 +99,7 @@ def _kitchen(f):
     f.put("FloorDrain", 11, 4)
     f.put("MopBucket", 10, 3)
     f.put("PuddleSmear", 12, 4)
-    f.put("DecalSpawnerDirtBase", 14, 4)
+    f.put("DecalSpawnerDirtNear", 14, 4)
     f.put("SignKitchen", 12, 2, FACE_V_PLUS)
     f.put(SPEAKER, 13, 2, FACE_V_PLUS)
     f.put(BANNER, 14, 2, FACE_V_PLUS)
