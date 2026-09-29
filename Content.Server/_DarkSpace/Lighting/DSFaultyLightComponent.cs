@@ -11,6 +11,9 @@ public sealed partial class DSFaultyLightComponent : Component
     /// </summary>
     [DataField]
     public float Severity = 0.5f;
+
+    [DataField]
+    public TimeSpan NextFault;
 }
 
 /// <summary>

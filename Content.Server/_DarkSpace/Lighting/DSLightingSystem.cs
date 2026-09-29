@@ -26,8 +26,6 @@ public sealed partial class DSLightingSystem : EntitySystem
     [Dependency] private SharedPointLightSystem _pointLight = default!;
     [Dependency] private SharedContainerSystem _container = default!;
 
-    // Chance that a fault picks a random healthy lamp instead of a faulty one.
-    private const float HealthyLampChance = 0.15f;
     // Chance that a fault spreads to nearby lamps, like a bad circuit in a corridor.
     private const float CascadeChance = 0.12f;
     private const float CascadeRange = 5f;
@@ -48,8 +46,6 @@ public sealed partial class DSLightingSystem : EntitySystem
 
     private bool _rollFaulty;
     private readonly HashSet<EntityUid> _rolled = new();
-    private readonly List<EntityUid> _faulty = new();
-    private readonly List<EntityUid> _healthy = new();
     private readonly HashSet<Entity<PoweredLightComponent>> _nearby = new();
 
     public override void Initialize()
@@ -113,6 +109,7 @@ public sealed partial class DSLightingSystem : EntitySystem
     private void RollFaultyLamps()
     {
         _rollFaulty = false;
+        var faultyCount = 0;
 
         var query = EntityQueryEnumerator<PoweredLightComponent>();
         while (query.MoveNext(out var uid, out var light))
@@ -122,18 +119,22 @@ public sealed partial class DSLightingSystem : EntitySystem
 
             // Most faulty lamps are only a little off; a few are properly dying.
             var severity = MathF.Pow(_random.NextFloat(), 2f) * 0.9f + 0.1f;
-            EnsureComp<DSFaultyLightComponent>(uid).Severity = severity;
+            var comp = EnsureComp<DSFaultyLightComponent>(uid);
+            comp.Severity = severity;
+            comp.NextFault = _timing.CurTime + TimeSpan.FromSeconds(_random.NextFloat(5f, 60f));
+            faultyCount++;
 
             // The worst ones flicker nonstop, the way upstream aged tubes do.
             if (severity > 0.85f && light.BulbType == LightBulbType.Tube)
                 EnsureComp<BlinkingPoweredLightComponent>(uid);
         }
+
+        Log.Info($"Rolled {faultyCount} faulty lamps out of {_rolled.Count}, round intensity {_roundIntensity:F2}");
     }
 
     public override void Update(float frameTime)
     {
         base.Update(frameTime);
-
         if (_rollFaulty)
             RollFaultyLamps();
 
@@ -146,18 +147,68 @@ public sealed partial class DSLightingSystem : EntitySystem
                 EndFault(uid, fault);
         }
 
-        if (!_faultsEnabled || now < _nextFault)
+        if (!_faultsEnabled)
             return;
 
-        // Exponential-ish spacing so faults come in irregular bursts and lulls.
-        var mean = _faultInterval / MathF.Max(_roundIntensity, 0.05f);
+        // Every faulty lamp keeps its own irregular schedule, so a bad corridor misbehaves on its own rhythm.
+        var faulty = EntityQueryEnumerator<DSFaultyLightComponent, PoweredLightComponent>();
+        while (faulty.MoveNext(out var uid, out var comp, out var light))
+        {
+            if (now < comp.NextFault)
+                continue;
+
+            comp.NextFault = now + NextFaultDelay(comp.Severity);
+            TryFault(uid, light, comp.Severity);
+        }
+
+        // Rarely, a perfectly healthy lamp somewhere glitches too.
+        if (now < _nextFault)
+            return;
+
+        _nextFault = now + RandomDelay(_faultInterval / MathF.Max(_roundIntensity, 0.05f));
+
+        EntityUid? picked = null;
+        PoweredLightComponent? pickedLight = null;
+        var seen = 0;
+        var query = EntityQueryEnumerator<PoweredLightComponent>();
+        while (query.MoveNext(out var uid, out var light))
+        {
+            if (!light.CurrentLit || HasComp<DSFaultyLightComponent>(uid))
+                continue;
+
+            // Reservoir sampling: uniform pick without building a list.
+            if (_random.Next(++seen) == 0)
+            {
+                picked = uid;
+                pickedLight = light;
+            }
+        }
+
+        if (picked != null)
+            TryFault(picked.Value, pickedLight!, 0.15f);
+    }
+
+    /// <summary>
+    /// Exponential-ish spacing, so faults come in irregular bursts and lulls.
+    /// </summary>
+    private TimeSpan RandomDelay(float mean)
+    {
         var wait = -MathF.Log(1f - _random.NextFloat() * 0.95f) * mean;
-        _nextFault = now + TimeSpan.FromSeconds(Math.Clamp(wait, 0.5f, mean * 4f));
+        return TimeSpan.FromSeconds(Math.Clamp(wait, 2f, mean * 4f));
+    }
 
-        if (PickLamp() is not { } lamp)
+    private TimeSpan NextFaultDelay(float severity)
+    {
+        // A barely faulty lamp acts up every minute and a half or so, a dying one every few seconds.
+        var mean = MathHelper.Lerp(90f, 12f, severity) / MathF.Max(_roundIntensity, 0.05f);
+        return RandomDelay(mean);
+    }
+
+    private void TryFault(EntityUid lamp, PoweredLightComponent light, float severity)
+    {
+        if (!light.CurrentLit || HasComp<DSLightFaultComponent>(lamp) || HasComp<BlinkingPoweredLightComponent>(lamp))
             return;
 
-        var severity = CompOrNull<DSFaultyLightComponent>(lamp)?.Severity ?? 0.2f;
         var type = PickFault(severity);
         StartFault(lamp, type, severity);
 
@@ -171,35 +222,6 @@ public sealed partial class DSLightingSystem : EntitySystem
             if (other.Owner != lamp && _random.Prob(0.6f))
                 StartFault(other, type, severity);
         }
-    }
-
-    private EntityUid? PickLamp()
-    {
-        _faulty.Clear();
-        _healthy.Clear();
-
-        var query = EntityQueryEnumerator<PoweredLightComponent>();
-        while (query.MoveNext(out var uid, out var light))
-        {
-            if (!light.CurrentLit || HasComp<DSLightFaultComponent>(uid) || HasComp<BlinkingPoweredLightComponent>(uid))
-                continue;
-
-            if (TryComp<DSFaultyLightComponent>(uid, out var faulty))
-            {
-                // Add worse lamps more than once so they get picked more often.
-                for (var i = 0; i < 1 + (int) (faulty.Severity * 4); i++)
-                    _faulty.Add(uid);
-            }
-            else
-            {
-                _healthy.Add(uid);
-            }
-        }
-
-        if (_healthy.Count > 0 && (_faulty.Count == 0 || _random.Prob(HealthyLampChance)))
-            return _random.Pick(_healthy);
-
-        return _faulty.Count > 0 ? _random.Pick(_faulty) : null;
     }
 
     private DSLightFault PickFault(float severity)

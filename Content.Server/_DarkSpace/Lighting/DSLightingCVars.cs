@@ -12,13 +12,13 @@ public sealed class DSLightingCVars
     /// Multiplier for the energy (brightness) of every light bulb and tube when it spawns.
     /// </summary>
     public static readonly CVarDef<float> EnergyMultiplier =
-        CVarDef.Create("darkspace.light_energy_mult", 0.6f, CVar.SERVERONLY);
+        CVarDef.Create("darkspace.light_energy_mult", 0.45f, CVar.SERVERONLY);
 
     /// <summary>
     /// Multiplier for the radius of every light bulb and tube when it spawns.
     /// </summary>
     public static readonly CVarDef<float> RadiusMultiplier =
-        CVarDef.Create("darkspace.light_radius_mult", 0.8f, CVar.SERVERONLY);
+        CVarDef.Create("darkspace.light_radius_mult", 0.75f, CVar.SERVERONLY);
 
     /// <summary>
     /// Color the lamps are tinted towards (hex).
@@ -30,7 +30,7 @@ public sealed class DSLightingCVars
     /// How strongly the lamps are tinted, 0 = original color, 1 = pure tint.
     /// </summary>
     public static readonly CVarDef<float> TintStrength =
-        CVarDef.Create("darkspace.light_tint_strength", 0.3f, CVar.SERVERONLY);
+        CVarDef.Create("darkspace.light_tint_strength", 0.35f, CVar.SERVERONLY);
 
     /// <summary>
     /// Enables random lamp faults (flickering, dying out, brownouts).
@@ -42,11 +42,12 @@ public sealed class DSLightingCVars
     /// Chance that a lamp fixture is faulty from roundstart. Faulty lamps misbehave far more often.
     /// </summary>
     public static readonly CVarDef<float> FaultyChance =
-        CVarDef.Create("darkspace.light_faulty_chance", 0.07f, CVar.SERVERONLY);
+        CVarDef.Create("darkspace.light_faulty_chance", 0.12f, CVar.SERVERONLY);
 
     /// <summary>
-    /// Average seconds between two lamp faults on the whole server, before the per-round intensity roll.
+    /// Average seconds between glitches of otherwise healthy lamps on the whole server, before the per-round intensity roll.
+    /// Faulty lamps keep their own, much faster schedule.
     /// </summary>
     public static readonly CVarDef<float> FaultInterval =
-        CVarDef.Create("darkspace.light_fault_interval", 6f, CVar.SERVERONLY);
+        CVarDef.Create("darkspace.light_fault_interval", 20f, CVar.SERVERONLY);
 }
