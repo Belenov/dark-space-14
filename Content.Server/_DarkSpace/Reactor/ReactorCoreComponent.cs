@@ -1,3 +1,5 @@
+using Content.Shared._DarkSpace.Reactor;
+
 namespace Content.Server._DarkSpace.Reactor;
 
 /// <summary>

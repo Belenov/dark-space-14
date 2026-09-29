@@ -1,15 +1,6 @@
-namespace Content.Server._DarkSpace.Reactor;
+using Content.Shared._DarkSpace.Reactor;
 
-/// <summary>
-/// What sits in one channel of the reactor core.
-/// </summary>
-public enum ReactorCellType : byte
-{
-    Empty,
-    Fuel,
-    Rod,
-    Graphite,
-}
+namespace Content.Server._DarkSpace.Reactor;
 
 /// <summary>
 /// Tunable coefficients of the core. Kept separate from the component so the math can be unit tested.

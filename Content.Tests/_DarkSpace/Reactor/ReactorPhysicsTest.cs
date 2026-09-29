@@ -1,3 +1,4 @@
+using Content.Shared._DarkSpace.Reactor;
 using System.Collections.Generic;
 using Content.Server._DarkSpace.Reactor;
 using NUnit.Framework;

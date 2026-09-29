@@ -18,3 +18,20 @@ ds-reactor-examine-scrammed = [color=red]Сработала АЗ-5.[/color]
 ds-reactor-examine-layout = Картограмма (Т топливо, С стержень, Г графит):
     {$layout}
 ds-reactor-examine-melted = [color=red]Активная зона расплавлена.[/color]
+
+ds-reactor-access-denied = Доступ к пульту запрещён.
+ds-reactor-ui-title = Пульт СУЗ ИР-7 «Заря»
+ds-reactor-ui-power = Тепловая мощность
+ds-reactor-ui-keff = k эфф
+ds-reactor-ui-core = Температура зоны
+ds-reactor-ui-coolant = Теплоноситель
+ds-reactor-ui-no-coolant = нет газа!
+ds-reactor-ui-rods = Стержни СУЗ
+ds-reactor-ui-integrity = Целостность зоны
+ds-reactor-ui-rod-target = Стержни:
+ds-reactor-ui-raise = Поднять стержни (реактивность растёт)
+ds-reactor-ui-lower = Опустить стержни (реактивность падает)
+ds-reactor-ui-cartogram = Картограмма зоны
+ds-reactor-ui-passport = Паспорт партии №{$batch}: k размножения {$k} ±{$error}%
+ds-reactor-ui-scrammed = АЗ-5 СРАБОТАЛА
+ds-reactor-examine-melted-plain = ЗОНА РАСПЛАВЛЕНА

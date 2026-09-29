@@ -4,6 +4,7 @@ using Content.Server.Explosion.EntitySystems;
 using Content.Server.NodeContainer.EntitySystems;
 using Content.Server.NodeContainer.Nodes;
 using Content.Server.Radiation.Systems;
+using Content.Shared._DarkSpace.Reactor;
 using Content.Shared.Access.Systems;
 using Content.Shared.Administration.Logs;
 using Content.Shared.Atmos;
@@ -12,13 +13,14 @@ using Content.Shared.Database;
 using Content.Shared.Examine;
 using Content.Shared.Popups;
 using Content.Shared.Verbs;
+using Robust.Server.GameObjects;
 using Robust.Shared.Random;
 using Robust.Shared.Timing;
 using Robust.Shared.Utility;
 
 namespace Content.Server._DarkSpace.Reactor;
 
-public sealed class ReactorCoreSystem : EntitySystem
+public sealed partial class ReactorCoreSystem : EntitySystem
 {
     [Dependency] private IGameTiming _timing = default!;
     [Dependency] private IRobustRandom _random = default!;
@@ -30,6 +32,7 @@ public sealed class ReactorCoreSystem : EntitySystem
     [Dependency] private ExplosionSystem _explosion = default!;
     [Dependency] private AccessReaderSystem _access = default!;
     [Dependency] private SharedPopupSystem _popup = default!;
+    [Dependency] private UserInterfaceSystem _ui = default!;
 
     public override void Initialize()
     {
@@ -38,6 +41,46 @@ public sealed class ReactorCoreSystem : EntitySystem
         SubscribeLocalEvent<ReactorCoreComponent, AtmosDeviceUpdateEvent>(OnAtmosUpdate);
         SubscribeLocalEvent<ReactorCoreComponent, ExaminedEvent>(OnExamined);
         SubscribeLocalEvent<ReactorCoreComponent, GetVerbsEvent<Verb>>(OnGetVerbs);
+
+        Subs.BuiEvents<ReactorCoreComponent>(ReactorUiKey.Key, subs =>
+        {
+            subs.Event<BoundUIOpenedEvent>((ent, ref _) => UpdateUi(ent));
+            subs.Event<ReactorSetRodsMessage>(OnSetRodsMessage);
+            subs.Event<ReactorScramMessage>((ent, ref args) =>
+            {
+                if (_access.IsAllowed(args.Actor, ent))
+                    Scram(ent, args.Actor);
+            });
+            subs.Event<ReactorResetScramMessage>((ent, ref args) =>
+            {
+                if (_access.IsAllowed(args.Actor, ent))
+                    ResetScram(ent, args.Actor);
+            });
+        });
+    }
+
+    private void OnSetRodsMessage(Entity<ReactorCoreComponent> ent, ref ReactorSetRodsMessage args)
+    {
+        if (!_access.IsAllowed(args.Actor, ent))
+        {
+            _popup.PopupEntity(Loc.GetString("ds-reactor-access-denied"), ent, args.Actor);
+            return;
+        }
+
+        SetRodTarget(ent, args.Target, args.Actor);
+    }
+
+    private void UpdateUi(Entity<ReactorCoreComponent> ent)
+    {
+        if (!_ui.IsUiOpen(ent.Owner, ReactorUiKey.Key))
+            return;
+
+        var c = ent.Comp;
+        _ui.SetUiState(ent.Owner, ReactorUiKey.Key, new ReactorUiState(
+            c.Power, c.NominalPower, c.KEff, c.CoreTemperature, c.CoolantTemperature,
+            c.WarningTemperature, c.MeltdownTemperature, c.RodInsertion, c.TargetRodInsertion,
+            c.Integrity, c.Scrammed, c.Melted, c.BatchNumber, c.PassportReproduction, c.PassportError,
+            c.Size, c.Cells));
     }
 
     private void OnMapInit(Entity<ReactorCoreComponent> ent, ref MapInitEvent args)
@@ -111,6 +154,7 @@ public sealed class ReactorCoreSystem : EntitySystem
         _radiation.SetIntensity(uid, comp.BaseRadiation + comp.RadiationPerNominal * comp.Power / comp.NominalPower);
 
         UpdateFailure(ent, dt);
+        UpdateUi(ent);
     }
 
     private void MoveRods(ReactorCoreComponent comp, float dt)
@@ -157,6 +201,7 @@ public sealed class ReactorCoreSystem : EntitySystem
 
         var coords = Transform(uid).Coordinates;
         Spawn(comp.CoriumPrototype, coords);
+        UpdateUi(ent);
         _explosion.QueueExplosion(uid, "Default", comp.MeltdownExplosionIntensity, 3f, 30f, addLog: false);
     }
 
@@ -168,6 +213,7 @@ public sealed class ReactorCoreSystem : EntitySystem
         ent.Comp.TargetRodInsertion = Math.Clamp(target, 0f, 1f);
         if (user != null)
             _adminLog.Add(LogType.Action, LogImpact.Medium, $"{ToPrettyString(user.Value):user} set rods of {ToPrettyString(ent):reactor} to {ent.Comp.TargetRodInsertion:P0}");
+        UpdateUi(ent);
     }
 
     /// <summary>

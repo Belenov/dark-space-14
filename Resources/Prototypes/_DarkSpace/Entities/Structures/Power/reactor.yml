@@ -26,6 +26,12 @@
     intensity: 0.2
   - type: AccessReader
     access: [["Engineering"]]
+  - type: UserInterface
+    interfaces:
+      enum.ReactorUiKey.Key:
+        type: ReactorBoundUserInterface
+  - type: ActivatableUI
+    key: enum.ReactorUiKey.Key
   - type: ReactorCore
     # F = fuel, R = rod, G = graphite, . = empty. Checkerboard with rods between fuel: critical at roughly 40% rod insertion.
     layout:
