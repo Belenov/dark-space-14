@@ -9,3 +9,11 @@ soft_max_players = 60
 
 [hub]
 tags = "lang:ru,rp:med"
+
+# Closer default camera: 18x13 tiles instead of upstream 21x15 (~15% bigger sprites).
+[viewport]
+minimum_width = 13
+maximum_width = 18
+
+[darkspace]
+viewport_height = 13
