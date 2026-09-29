@@ -1,0 +1,51 @@
+# Isotope reactor "ИР-7 Заря", first vertical slice.
+# Sprites are placeholders borrowed from the AME until our own art exists.
+
+- type: entity
+  parent: BaseStructure
+  id: DarkSpaceReactorCore
+  name: реактор ИР-7 «Заря»
+  description: Изотопный реактор канального типа. Греет теплоноситель в трубе, электричество даёт ТЭГ на этом контуре.
+  components:
+  - type: Sprite
+    sprite: Structures/Power/Generation/ame.rsi
+    state: control
+    snapCardinals: true
+  - type: Rotatable
+  - type: AtmosDevice
+  - type: AtmosPipeColor
+  - type: PipeColorVisuals
+  - type: PipeRestrictOverlap
+  - type: NodeContainer
+    nodes:
+      pipe:
+        !type:PipeNode
+        nodeGroupID: Pipe
+        pipeDirection: South
+  - type: RadiationSource
+    intensity: 0.2
+  - type: AccessReader
+    access: [["Engineering"]]
+  - type: ReactorCore
+    # F = fuel, R = rod, G = graphite, . = empty. Checkerboard with rods between fuel: critical at roughly 40% rod insertion.
+    layout:
+    - GFGFG
+    - FRFRF
+    - GFGFG
+    - FRFRF
+    - GFGFG
+
+- type: entity
+  parent: BaseStructure
+  id: DarkSpaceReactorCorium
+  name: кориум
+  description: Застывший расплав активной зоны. Смертельно радиоактивен.
+  components:
+  - type: Sprite
+    sprite: Structures/Power/Generation/ame.rsi
+    state: core_strong
+    color: "#ff7a3a"
+  - type: Fixtures
+    fixtures: {}
+  - type: RadiationSource
+    intensity: 12
