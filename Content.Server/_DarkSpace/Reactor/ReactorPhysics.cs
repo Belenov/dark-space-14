@@ -23,10 +23,10 @@ public sealed partial class ReactorCoefficients
     /// <summary>k_eff change per fuel cell above <see cref="ReferenceFuelCount"/>.</summary>
     [DataField] public float FuelMass = 0.015f;
 
-    [DataField] public int ReferenceFuelCount = 9;
+    [DataField] public int ReferenceFuelCount = 24;
 
     /// <summary>Overall leakage multiplier applied to the averaged core.</summary>
-    [DataField] public float Base = 0.9f;
+    [DataField] public float Base = 0.95f;
 
     /// <summary>Negative fuel-temperature (Doppler) feedback per 1000 K above 300 K.</summary>
     [DataField] public float Doppler = 0.03f;
@@ -43,14 +43,11 @@ public sealed partial class ReactorCoefficients
 public static class ReactorPhysics
 {
     /// <summary>
-    /// Static multiplication factor of a core layout, before temperature feedback.
-    /// Each fuel cell is weighted by its four neighbours, so the layout itself is the puzzle.
+    /// Local multiplication of every channel: 0 for non-fuel, otherwise 1 plus the effect of its four neighbours.
     /// </summary>
-    public static float LayoutK(IReadOnlyList<ReactorCellType> cells, int size, float rodInsertion, float reproduction, ReactorCoefficients c)
+    public static float[] CellFactors(IReadOnlyList<ReactorCellType> cells, int size, float rodInsertion, ReactorCoefficients c)
     {
-        var fuelCount = 0;
-        var sum = 0f;
-
+        var factors = new float[cells.Count];
         for (var y = 0; y < size; y++)
         {
             for (var x = 0; x < size; x++)
@@ -58,14 +55,37 @@ public static class ReactorPhysics
                 if (cells[y * size + x] != ReactorCellType.Fuel)
                     continue;
 
-                fuelCount++;
-                var local = 1f;
-                local += Neighbour(cells, size, x - 1, y, rodInsertion, c);
-                local += Neighbour(cells, size, x + 1, y, rodInsertion, c);
-                local += Neighbour(cells, size, x, y - 1, rodInsertion, c);
-                local += Neighbour(cells, size, x, y + 1, rodInsertion, c);
-                sum += local;
+                factors[y * size + x] = MathF.Max(0f, 1f
+                    + Neighbour(cells, size, x - 1, y, rodInsertion, c)
+                    + Neighbour(cells, size, x + 1, y, rodInsertion, c)
+                    + Neighbour(cells, size, x, y - 1, rodInsertion, c)
+                    + Neighbour(cells, size, x, y + 1, rodInsertion, c));
             }
+        }
+
+        return factors;
+    }
+
+    /// <summary>
+    /// Static multiplication factor of a core layout, before temperature feedback.
+    /// Each fuel cell is weighted by its four neighbours, so the layout itself is the puzzle.
+    /// </summary>
+    public static float LayoutK(IReadOnlyList<ReactorCellType> cells, int size, float rodInsertion, float reproduction, ReactorCoefficients c)
+    {
+        return LayoutK(cells, CellFactors(cells, size, rodInsertion, c), reproduction, c);
+    }
+
+    public static float LayoutK(IReadOnlyList<ReactorCellType> cells, float[] factors, float reproduction, ReactorCoefficients c)
+    {
+        var fuelCount = 0;
+        var sum = 0f;
+        for (var i = 0; i < cells.Count; i++)
+        {
+            if (cells[i] != ReactorCellType.Fuel)
+                continue;
+
+            fuelCount++;
+            sum += factors[i];
         }
 
         if (fuelCount == 0)

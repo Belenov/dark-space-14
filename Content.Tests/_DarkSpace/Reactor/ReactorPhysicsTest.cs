@@ -9,12 +9,12 @@ namespace Content.Tests._DarkSpace.Reactor;
 [TestOf(typeof(ReactorPhysics))]
 public sealed class ReactorPhysicsTest
 {
-    private static readonly List<string> Checkerboard = new() { "GFGFG", "FRFRF", "GFGFG", "FRFRF", "GFGFG" };
+    private static readonly List<string> Checkerboard = new() { "GFGFGFG", "FRFRFRF", "GFGFGFG", "FRFRFRF", "GFGFGFG", "FRFRFRF", "GFGFGFG" };
 
     private static float K(float rods, List<string> layout = null)
     {
-        var cells = ReactorCoreSystem.ParseLayout(layout ?? Checkerboard, 5);
-        return ReactorPhysics.LayoutK(cells, 5, rods, 1f, new ReactorCoefficients());
+        var cells = ReactorCoreSystem.ParseLayout(layout ?? Checkerboard, 7);
+        return ReactorPhysics.LayoutK(cells, 7, rods, 1f, new ReactorCoefficients());
     }
 
     [Test]
@@ -22,6 +22,7 @@ public sealed class ReactorPhysicsTest
     {
         Assert.That(K(0f), Is.GreaterThan(1f), "withdrawn rods must make the core supercritical");
         Assert.That(K(1f), Is.LessThan(0.9f), "inserted rods must shut the core down");
+        Assert.That(K(0.43f), Is.InRange(0.99f, 1.01f), "default hall should go critical around 43% rods");
     }
 
     [Test]
@@ -34,7 +35,7 @@ public sealed class ReactorPhysicsTest
     public void GraphiteModeratesAndEmptyCoreIsDead()
     {
         var withGraphite = K(0.5f);
-        var withoutGraphite = K(0.5f, new() { ".F.F.", "FRFRF", ".F.F.", "FRFRF", ".F.F." });
+        var withoutGraphite = K(0.5f, new() { ".F.F.F.", "FRFRFRF", ".F.F.F.", "FRFRFRF", ".F.F.F.", "FRFRFRF", ".F.F.F." });
         Assert.That(withGraphite, Is.GreaterThan(withoutGraphite));
         Assert.That(K(0f, new() { "GGGGG" }), Is.Zero);
     }

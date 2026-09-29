@@ -1,4 +1,5 @@
 using Content.Shared._DarkSpace.Reactor;
+using Robust.Shared.Prototypes;
 
 namespace Content.Server._DarkSpace.Reactor;
 
@@ -12,18 +13,43 @@ public sealed partial class ReactorCoreComponent : Component
     [DataField]
     public string PipeName = "pipe";
 
-    /// <summary>Side length of the square core grid.</summary>
+    /// <summary>
+    /// Side length of the square channel grid. The core entity sits on the centre tile,
+    /// channels are read from the tiles around it.
+    /// </summary>
     [DataField]
-    public int Size = 5;
+    public int Size = 7;
 
     /// <summary>
-    /// Initial layout, one string per row: F = fuel, R = control rod, G = graphite, . = empty.
+    /// If set, on map init the core spawns any missing channels around itself and fills them per this layout,
+    /// one string per row: F = fuel, R = control rod, G = graphite, . = empty channel.
+    /// Mapped cores with their own channels are left untouched.
     /// </summary>
     [DataField]
     public List<string> Layout = new();
 
+    [DataField]
+    public EntProtoId ChannelPrototype = "DarkSpaceReactorChannel";
+
+    [DataField]
+    public Dictionary<ReactorCellType, EntProtoId> AssemblyPrototypes = new()
+    {
+        [ReactorCellType.Fuel] = "DarkSpaceReactorFuelU235",
+        [ReactorCellType.Rod] = "DarkSpaceReactorControlRod",
+        [ReactorCellType.Graphite] = "DarkSpaceReactorGraphite",
+    };
+
+    /// <summary>Contents of each channel, row by row, refreshed every tick.</summary>
     [ViewVariables]
     public List<ReactorCellType> Cells = new();
+
+    /// <summary>Channel entity per cell, null where the channel is missing.</summary>
+    [ViewVariables]
+    public List<EntityUid?> Channels = new();
+
+    /// <summary>Thermal power per channel, watts.</summary>
+    [ViewVariables]
+    public List<float> Flux = new();
 
     [DataField]
     public ReactorCoefficients Coefficients = new();
