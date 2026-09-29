@@ -115,7 +115,7 @@ def _s2(f):
     f.put("RubberStampApproved", 11, 5)
     f.put("Windoor", 14, 5, P)
     # storekeeper bay
-    f.put("FilingCabinet", 16, 3, P)
+    f.put("filingCabinet", 16, 3, P)
     tbl(f, 16, 4, "PaperBin", "Pen", proto="TableWood")
     f.put("ChairOfficeDark", 16, 5, M)
     f.put("DarkSpaceGostPlateToolRoom", 10, 2, P)
@@ -146,7 +146,7 @@ def _s2(f):
     f.put("PaperBin", 10, 8)
     f.put("LightReplacer", 12, 8)
     f.put("Windoor", 14, 8, M)
-    f.put("FilingCabinet", 16, 10, M)
+    f.put("filingCabinet", 16, 10, M)
     tbl(f, 16, 9, "Paper", "Pen", proto="TableWood")
     f.put("ChairOfficeDark", 16, 8, P)
     f.put("DarkSpaceGostPlateSpares", 10, 11, M)

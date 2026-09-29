@@ -79,7 +79,7 @@ def _sleep_post(f):
     f.put("ExtinguisherCabinet", 5, 2, FACE_V_PLUS)
     f.put("SignFlammable", 8, 2, FACE_V_PLUS)
     f.put("SignDanger", 9, 5, FACE_TO_HUB)
-    f.put("DecalSpawnerDirtBase", 7, 4)
+    f.put("DecalSpawnerDirtNear", 7, 4)
 
 
 def _lounge(f):
@@ -182,7 +182,7 @@ def _washroom(f):
     f.put("SoapNT", 35, 6)
     f.put("SignRestroom", 33, 7, FACE_TO_HUB)
     f.put("PoweredSmallLight", 36, 6, FACE_TO_HUB)
-    f.put("DecalSpawnerDirtBase", 35, 6)
+    f.put("DecalSpawnerDirtNear", 35, 6)
 
 
 def build(f):

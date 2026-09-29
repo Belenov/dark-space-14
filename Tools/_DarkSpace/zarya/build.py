@@ -184,8 +184,8 @@ def hub():
     P("DarkSpaceGostBanner", 67, 16, S)
     P("ComputerId", 59, 12, S)
     P("ChairOfficeDark", 59, 13, S)
-    P("FilingCabinet", 67, 10)
-    P("FilingCabinet", 67, 11)
+    P("filingCabinet", 67, 10)
+    P("filingCabinet", 67, 11)
     for x in (55, 65):
         _light(x, 16, S)
     P("DarkSpaceGostLoudspeaker", 60, 9, N)
