@@ -1,0 +1,40 @@
+# Dressing for the IR-7 "Zarya" reactor hall on the Dev map.
+# Decorative stand-ins for plant equipment that has no mechanics yet; swap when real ones exist.
+
+- type: entity
+  abstract: true
+  parent: BaseStructure
+  id: DarkSpaceReactorDressingBase
+  suffix: Заглушка
+  components:
+  - type: Rotatable
+
+- type: entity
+  parent: DarkSpaceReactorDressingBase
+  id: DarkSpaceReactorSuzCabinetPlaceholder
+  name: шкаф приводов СУЗ
+  description: Шкаф сервоприводов группы стержней. За дверцей щёлкают реле.
+  components:
+  - type: Sprite
+    sprite: Structures/Power/substation.rsi
+    state: substation
+
+- type: entity
+  parent: DarkSpaceReactorDressingBase
+  id: DarkSpaceReactorKipRackPlaceholder
+  name: стойка КИП
+  description: Контрольно-измерительные приборы канала. Самописцы тихо шуршат бумагой.
+  components:
+  - type: Sprite
+    sprite: Structures/Machines/server.rsi
+    state: server
+
+- type: entity
+  parent: DarkSpaceReactorDressingBase
+  id: DarkSpaceReactorPumpPlaceholder
+  name: главный циркуляционный насос
+  description: ГЦН первого контура. Пока стоит на консервации.
+  components:
+  - type: Sprite
+    sprite: Structures/Power/smes.rsi
+    state: smes
